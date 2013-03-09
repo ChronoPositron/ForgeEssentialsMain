@@ -270,11 +270,4 @@ public abstract class ForgeEssentialsCommandBase extends CommandBase
 	}
 
 	public abstract String getCommandPerm();
-
-    // synthetic method (TODO: fix in SSMP, then remove here)
-    public int compareTo(Object par1Obj)
-    {
-        return this.compareNameTo((ICommand)par1Obj);
-    }
-    //
 }

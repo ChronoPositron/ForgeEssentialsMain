@@ -7,13 +7,13 @@
   <url>https://github.com/ForgeEssentials/ForgeEssentialsMain></url>
   <properties>
     <mod.at>${basedir}/src/FE_SRC_COMMON/forgeessentials_at.cfg</mod.at>
-    <forge.suffix>forgeessentials1</forge.suffix>
+    <forge.suffix>-forgeessentials1</forge.suffix>
   </properties>
 
   <parent>
     <groupId>net.md-5</groupId>
     <artifactId>ForgeMod</artifactId>
-    <version>1.4.7-6.6.2.534-1</version>
+    <version>1.4.7-6.6.2.534-R2</version>
   </parent>
  
   <build>

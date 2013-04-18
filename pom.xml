@@ -9,13 +9,11 @@
     <mod.at>${basedir}/src/FE_SRC_COMMON/forgeessentials_at.cfg</mod.at>
     <forge.suffix>-forgeessentials1</forge.suffix>
   </properties>
-
   <parent>
     <groupId>net.md-5</groupId>
     <artifactId>ForgeMod</artifactId>
     <version>1.5-7.7.1-SNAPSHOT</version>
   </parent>
- 
   <build>
     <sourceDirectory>${basedir}/src/FE_SRC_COMMON</sourceDirectory>
     <resources>

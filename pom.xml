@@ -12,7 +12,7 @@
   <parent>
     <groupId>net.md-5</groupId>
     <artifactId>ForgeMod</artifactId>
-    <version>1.5-7.7.1-SNAPSHOT</version>
+    <version>1.5.1-7.7.1-SNAPSHOT</version>
   </parent>
   <build>
     <sourceDirectory>${basedir}/src/FE_SRC_COMMON</sourceDirectory>

@@ -1,23 +1,22 @@
 package com.ForgeEssentials.commands;
 
-import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.effect.EntityLightningBolt;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.MovingObjectPosition;
 
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
-public class CommandSmite extends ForgeEssentialsCommandBase
+public class CommandSmite extends FEcmdModuleCommands
 {
 
 	@Override
@@ -34,22 +33,15 @@ public class CommandSmite extends ForgeEssentialsCommandBase
 			if (args[0].toLowerCase().equals("me"))
 			{
 				sender.worldObj.addWeatherEffect(new EntityLightningBolt(sender.worldObj, sender.posX, sender.posY, sender.posZ));
-				sender.sendChatToPlayer(Localization.get(Localization.SMITE_SELF));
+				sender.sendChatToPlayer(Localization.get("command.smite.self"));
 			}
 			else
 			{
-				List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-				if (PlayerSelector.hasArguments(args[0]))
+				EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+				if (player != null)
 				{
-					players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-				}
-				if (players.size() != 0)
-				{
-					for (EntityPlayer victim : players)
-					{
-						victim.worldObj.addWeatherEffect(new EntityLightningBolt(victim.worldObj, victim.posX, victim.posY, victim.posZ));
-						sender.sendChatToPlayer(Localization.get(Localization.SMITE_PLAYER));
-					}
+					player.worldObj.addWeatherEffect(new EntityLightningBolt(player.worldObj, player.posX, player.posY, player.posZ));
+					sender.sendChatToPlayer(Localization.get("command.smite.player"));
 				}
 				else
 				{
@@ -67,7 +59,7 @@ public class CommandSmite extends ForgeEssentialsCommandBase
 			else
 			{
 				sender.worldObj.addWeatherEffect(new EntityLightningBolt(sender.worldObj, mop.blockX, mop.blockY, mop.blockZ));
-				sender.sendChatToPlayer(Localization.get(Localization.SMITE_GROUND));
+				sender.sendChatToPlayer(Localization.get("command.smite.ground"));
 			}
 		}
 	}
@@ -77,18 +69,11 @@ public class CommandSmite extends ForgeEssentialsCommandBase
 	{
 		if (args.length >= 1)
 		{
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer victim : players)
-				{
-					victim.worldObj.addWeatherEffect(new EntityLightningBolt(victim.worldObj, victim.posX, victim.posY, victim.posZ));
-					sender.sendChatToPlayer(Localization.get(Localization.SMITE_PLAYER));
-				}
+				player.worldObj.addWeatherEffect(new EntityLightningBolt(player.worldObj, player.posX, player.posY, player.posZ));
+				sender.sendChatToPlayer(Localization.get("command.smite.player"));
 			}
 			else
 			{
@@ -114,12 +99,18 @@ public class CommandSmite extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 
 }

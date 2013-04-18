@@ -4,6 +4,8 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.DamageSource;
 import net.minecraftforge.common.Configuration;
 
+import com.ForgeEssentials.WorldBorder.WorldBorder;
+
 public class damage implements IEffect
 {
 	private int	damage	= 1;
@@ -15,7 +17,7 @@ public class damage implements IEffect
 	}
 
 	@Override
-	public void execute(EntityPlayerMP player)
+	public void execute(WorldBorder wb, EntityPlayerMP player)
 	{
 		player.attackEntityFrom(DamageSource.generic, damage);
 	}

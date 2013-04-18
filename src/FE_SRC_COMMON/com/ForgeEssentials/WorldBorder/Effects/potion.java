@@ -7,9 +7,11 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.potion.PotionEffect;
 import net.minecraftforge.common.Configuration;
 
+import com.ForgeEssentials.WorldBorder.WorldBorder;
+
 public class potion implements IEffect
 {
-	private List<PotionEffect>	potionEffectsList	= new ArrayList();
+	private List<PotionEffect>	potionEffectsList	= new ArrayList<PotionEffect>();
 
 	@Override
 	public void registerConfig(Configuration config, String category)
@@ -18,7 +20,7 @@ public class potion implements IEffect
 		{ "9:5:0" };
 
 		config.addCustomCategoryComment(category, "For more information, go to http://www.minecraftwiki.net/wiki/Potion_effects#Parameters");
-		potionEffects = config.get(category, "potionEffects", potionEffects, "Format like this: 'ID:duration:amplifier'").valueList;
+		potionEffects = config.get(category, "potionEffects", potionEffects, "Format like this: 'ID:duration:amplifier'").getStringList();
 
 		for (String poisonEffect : potionEffects)
 		{
@@ -28,7 +30,7 @@ public class potion implements IEffect
 	}
 
 	@Override
-	public void execute(EntityPlayerMP player)
+	public void execute(WorldBorder wb, EntityPlayerMP player)
 	{
 		for (PotionEffect potionEffect : potionEffectsList)
 		{

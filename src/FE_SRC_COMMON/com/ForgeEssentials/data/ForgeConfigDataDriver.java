@@ -62,9 +62,9 @@ public class ForgeConfigDataDriver extends TextDataDriver
 
 		Configuration cfg = new Configuration(file, true);
 		cfg.load();
-		ITypeInfo info = DataStorageManager.getInfoForType(type);
+		ITypeInfo<?> info = DataStorageManager.getInfoForType(type);
 		TypeData data = DataStorageManager.getDataForType(type);
-		readClassFromProperty(cfg, cfg.categories.get(type.getFileSafeName()), data, info);
+		readClassFromProperty(cfg, cfg.getCategory(type.getFileSafeName()), data, info);
 		data.setUniqueKey(uniqueKey);
 
 		return data;
@@ -96,19 +96,19 @@ public class ForgeConfigDataDriver extends TextDataDriver
 			// ignore...
 			return;
 
-		Class type = obj.getClass();
+		Class<? extends Object> type = obj.getClass();
 
 		if (type.equals(Integer.class))
 		{
 			cfg.get(category, name, ((Integer) obj).intValue());
 		}
-		else if (type.equals(Byte.class))
-		{
-			cfg.get(category, name, ((Byte) obj).intValue());
-		}
 		else if (type.equals(int[].class))
 		{
 			cfg.get(category, name, (int[]) obj);
+		}
+		else if (type.equals(Byte.class))
+		{
+			cfg.get(category, name, ((Byte) obj).intValue());
 		}
 		else if (type.equals(byte[].class))
 		{
@@ -125,6 +125,17 @@ public class ForgeConfigDataDriver extends TextDataDriver
 		{
 			cfg.get(category, name, ((Float) obj).floatValue());
 		}
+		else if (type.equals(float[].class))
+		{
+			double[] array = new double[((float[]) obj).length];
+
+			for (int i = 0; i < ((float[]) obj).length; i++)
+			{
+				array[i] = ((float[]) obj)[i];
+			}
+
+			cfg.get(category, name, array);
+		}
 		else if (type.equals(Double.class))
 		{
 			cfg.get(category, name, ((Double) obj).doubleValue());
@@ -132,6 +143,21 @@ public class ForgeConfigDataDriver extends TextDataDriver
 		else if (type.equals(double[].class))
 		{
 			cfg.get(category, name, (double[]) obj);
+		}
+		else if (type.equals(Long.class))
+		{
+			cfg.get(category, name, ((Long) obj).intValue());
+		}
+		else if (type.equals(long[].class))
+		{
+			int[] array = new int[((long[]) obj).length];
+
+			for (int i = 0; i < ((long[]) obj).length; i++)
+			{
+				array[i] = (int) ((long[]) obj)[i];
+			}
+
+			cfg.get(category, name, array);
 		}
 		else if (type.equals(Boolean.class))
 		{
@@ -163,7 +189,7 @@ public class ForgeConfigDataDriver extends TextDataDriver
 			throw new IllegalArgumentException("Cannot save object type. " + obj.getClass() + "  instance: " + obj);
 	}
 
-	private Object readFieldFromProperty(Configuration cfg, String category, String name, Class type)
+	private Object readFieldFromProperty(Configuration cfg, String category, String name, Class<?> type)
 	{
 		if (type.equals(int.class))
 			return cfg.get(category, name, 0).getInt();
@@ -184,31 +210,55 @@ public class ForgeConfigDataDriver extends TextDataDriver
 		}
 		else if (type.equals(float.class))
 			return (float) cfg.get(category, name, 0d).getDouble(0);
+		else if (type.equals(float[].class))
+		{
+			double[] array = cfg.get(category, name, new double[] {}).getDoubleList();
+			float[] fArray = new float[array.length];
+
+			for (int i = 0; i < array.length; i++)
+			{
+				fArray[i] = (float) array[i];
+			}
+			return fArray;
+		}
 		else if (type.equals(double.class))
 			return cfg.get(category, name, 0d).getDouble(0);
 		else if (type.equals(double[].class))
 			return cfg.get(category, name, new double[] {}).getDoubleList();
+		if (type.equals(long.class))
+			return (long) cfg.get(category, name, 0).getInt();
+		else if (type.equals(long[].class))
+		{
+			int[] array = cfg.get(category, name, new int[] {}).getIntList();
+			long[] lArray = new long[array.length];
+
+			for (int i = 0; i < array.length; i++)
+			{
+				lArray[i] = array[i];
+			}
+			return lArray;
+		}
 		else if (type.equals(boolean.class))
 			return cfg.get(category, name, false).getBoolean(false);
 		else if (type.equals(boolean[].class))
 			return cfg.get(category, name, new boolean[] {}).getBooleanList();
 		else if (type.equals(String.class))
-			return cfg.get(category, name, "").value;
+			return cfg.get(category, name, "").getString();
 		else if (type.equals(String[].class))
-			return cfg.get(category, name, new String[] {}).valueList;
+			return cfg.get(category, name, new String[] {}).getStringList();
 		else
 			// this should never happen...
 			return null;
 	}
 
-	private void readClassFromProperty(Configuration cfg, ConfigCategory cat, TypeData data, ITypeInfo info)
+	private void readClassFromProperty(Configuration cfg, ConfigCategory cat, TypeData data, ITypeInfo<?> info)
 	{
 
 		if (cat != null)
 		{
 			String name;
 			ClassContainer newType;
-			ITypeInfo newInfo;
+			ITypeInfo<?> newInfo;
 			TypeData newData;
 			Object value;
 			for (Property prop : cat.getValues().values())
@@ -219,8 +269,9 @@ public class ForgeConfigDataDriver extends TextDataDriver
 				data.putField(name, value);
 			}
 
-			for (ConfigCategory child : cfg.categories.values())
+			for (String childName : cfg.getCategoryNames())
 			{
+				ConfigCategory child = cfg.getCategory(childName);
 				if (child.isChild() && child.parent == cat) // intentional use
 															// of ==
 				{

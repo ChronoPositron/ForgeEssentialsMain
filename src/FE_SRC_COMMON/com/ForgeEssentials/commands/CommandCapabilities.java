@@ -1,18 +1,17 @@
 package com.ForgeEssentials.commands;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.RegGroup;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
-import com.ForgeEssentials.util.FEChatFormatCodes;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
@@ -24,7 +23,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
  * @author Dries007
  */
 
-public class CommandCapabilities extends ForgeEssentialsCommandBase
+public class CommandCapabilities extends FEcmdModuleCommands
 {
 	public static ArrayList<String>	names;
 	static
@@ -46,7 +45,6 @@ public class CommandCapabilities extends ForgeEssentialsCommandBase
 	/*
 	 * Expected syntax /capabilities [player] [capability] [value]
 	 */
-
 	@Override
 	public void processCommandPlayer(EntityPlayer sender, String[] args)
 	{
@@ -73,30 +71,20 @@ public class CommandCapabilities extends ForgeEssentialsCommandBase
 	{
 		if (args.length == 0)
 		{
-			sender.sendChatToPlayer("Possible capabilities:");
-			for (String cap : names)
-			{
-				sender.sendChatToPlayer(cap);
-			}
+			OutputHandler.chatConfirmation(sender, Localization.get("command.capabilities.list"));
+			OutputHandler.chatConfirmation(sender, FunctionHelper.niceJoin(names.toArray()));
 		}
 		else if (args.length == 1)
 		{
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer target : players)
-				{
-					sender.sendChatToPlayer(FEChatFormatCodes.GREEN + "Capabilities for " + target.username);
-					sender.sendChatToPlayer(names.get(0) + " = " + target.capabilities.disableDamage);
-					sender.sendChatToPlayer(names.get(1) + " = " + target.capabilities.isFlying);
-					sender.sendChatToPlayer(names.get(2) + " = " + target.capabilities.allowFlying);
-					sender.sendChatToPlayer(names.get(3) + " = " + target.capabilities.isCreativeMode);
-					sender.sendChatToPlayer(names.get(4) + " = " + target.capabilities.allowEdit);
-				}
+				OutputHandler.chatConfirmation(sender, Localization.format("command.capabilities.listForX", player.username));
+				sender.sendChatToPlayer(names.get(0) + " = " + player.capabilities.disableDamage);
+				sender.sendChatToPlayer(names.get(1) + " = " + player.capabilities.isFlying);
+				sender.sendChatToPlayer(names.get(2) + " = " + player.capabilities.allowFlying);
+				sender.sendChatToPlayer(names.get(3) + " = " + player.capabilities.isCreativeMode);
+				sender.sendChatToPlayer(names.get(4) + " = " + player.capabilities.allowEdit);
 			}
 			else
 			{
@@ -113,40 +101,33 @@ public class CommandCapabilities extends ForgeEssentialsCommandBase
 					return;
 				}
 			}
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer target : players)
+				if (args[1].equalsIgnoreCase(names.get(0)))
 				{
-					if (args[1].equalsIgnoreCase(names.get(0)))
-					{
-						sender.sendChatToPlayer(names.get(0) + " = " + target.capabilities.disableDamage);
-					}
-					else if (args[1].equalsIgnoreCase(names.get(1)))
-					{
-						sender.sendChatToPlayer(names.get(1) + " = " + target.capabilities.isFlying);
-					}
-					else if (args[1].equalsIgnoreCase(names.get(2)))
-					{
-						sender.sendChatToPlayer(names.get(2) + " = " + target.capabilities.allowFlying);
-					}
-					else if (args[1].equalsIgnoreCase(names.get(3)))
-					{
-						sender.sendChatToPlayer(names.get(3) + " = " + target.capabilities.isCreativeMode);
-					}
-					else if (args[1].equalsIgnoreCase(names.get(4)))
-					{
-						sender.sendChatToPlayer(names.get(4) + " = " + target.capabilities.allowEdit);
-					}
-					else
-					{
-						OutputHandler.chatError(sender, "Capability " + args[1] + " unknown.");
-						break;
-					}
+					sender.sendChatToPlayer(player.username + " => " + names.get(0) + " = " + player.capabilities.disableDamage);
+				}
+				else if (args[1].equalsIgnoreCase(names.get(1)))
+				{
+					sender.sendChatToPlayer(player.username + " => " + names.get(1) + " = " + player.capabilities.isFlying);
+				}
+				else if (args[1].equalsIgnoreCase(names.get(2)))
+				{
+					sender.sendChatToPlayer(player.username + " => " + names.get(2) + " = " + player.capabilities.allowFlying);
+				}
+				else if (args[1].equalsIgnoreCase(names.get(3)))
+				{
+					sender.sendChatToPlayer(player.username + " => " + names.get(3) + " = " + player.capabilities.isCreativeMode);
+				}
+				else if (args[1].equalsIgnoreCase(names.get(4)))
+				{
+					sender.sendChatToPlayer(player.username + " => " + names.get(4) + " = " + player.capabilities.allowEdit);
+				}
+				else
+				{
+					OutputHandler.chatError(sender, Localization.format("command.capabilities.capabilityUnknown", args[1]));
+					return;
 				}
 			}
 		}
@@ -160,54 +141,53 @@ public class CommandCapabilities extends ForgeEssentialsCommandBase
 					return;
 				}
 			}
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer target : players)
+				if (args[1].equalsIgnoreCase(names.get(0)))
 				{
-					if (args[1].equalsIgnoreCase(names.get(0)))
-					{
-						boolean bln = Boolean.parseBoolean(args[2]);
-						target.capabilities.disableDamage = bln;
-						sender.sendChatToPlayer(names.get(0) + " = " + target.capabilities.disableDamage);
-					}
-					else if (args[1].equalsIgnoreCase(names.get(1)))
-					{
-						boolean bln = Boolean.parseBoolean(args[2]);
-						target.capabilities.isFlying = bln;
-						sender.sendChatToPlayer(names.get(1) + " = " + target.capabilities.isFlying);
-					}
-					else if (args[1].equalsIgnoreCase(names.get(2)))
-					{
-						boolean bln = Boolean.parseBoolean(args[2]);
-						target.capabilities.allowFlying = bln;
-						sender.sendChatToPlayer(names.get(2) + " = " + target.capabilities.allowFlying);
-					}
-					else if (args[1].equalsIgnoreCase(names.get(3)))
-					{
-						boolean bln = Boolean.parseBoolean(args[2]);
-						target.capabilities.isCreativeMode = bln;
-						sender.sendChatToPlayer(names.get(3) + " = " + target.capabilities.isCreativeMode);
-					}
-					else if (args[1].equalsIgnoreCase(names.get(4)))
-					{
-						boolean bln = Boolean.parseBoolean(args[2]);
-						target.capabilities.allowEdit = bln;
-						sender.sendChatToPlayer(names.get(4) + " = " + target.capabilities.allowEdit);
-					}
-					else
-					{
-						OutputHandler.chatError(sender, "Capability " + args[1] + " unknown.");
-						break;
-					}
-					target.sendPlayerAbilities();
+					boolean bln = Boolean.parseBoolean(args[2]);
+					player.capabilities.disableDamage = bln;
+					sender.sendChatToPlayer(names.get(0) + " = " + player.capabilities.disableDamage);
 				}
+				else if (args[1].equalsIgnoreCase(names.get(1)))
+				{
+					boolean bln = Boolean.parseBoolean(args[2]);
+					player.capabilities.isFlying = bln;
+					sender.sendChatToPlayer(names.get(1) + " = " + player.capabilities.isFlying);
+				}
+				else if (args[1].equalsIgnoreCase(names.get(2)))
+				{
+					boolean bln = Boolean.parseBoolean(args[2]);
+					player.capabilities.allowFlying = bln;
+					sender.sendChatToPlayer(names.get(2) + " = " + player.capabilities.allowFlying);
+				}
+				else if (args[1].equalsIgnoreCase(names.get(3)))
+				{
+					boolean bln = Boolean.parseBoolean(args[2]);
+					player.capabilities.isCreativeMode = bln;
+					sender.sendChatToPlayer(names.get(3) + " = " + player.capabilities.isCreativeMode);
+				}
+				else if (args[1].equalsIgnoreCase(names.get(4)))
+				{
+					boolean bln = Boolean.parseBoolean(args[2]);
+					player.capabilities.allowEdit = bln;
+					sender.sendChatToPlayer(names.get(4) + " = " + player.capabilities.allowEdit);
+				}
+				else
+				{
+					OutputHandler.chatError(sender, Localization.format("command.capabilities.capabilityUnknown", args[1]));
+					return;
+				}
+				player.sendPlayerAbilities();
 			}
 		}
+	}
+
+	@Override
+	public void registerExtraPermissions(IPermRegisterEvent event)
+	{
+		event.registerPermissionLevel(getCommandPerm() + ".others", RegGroup.OWNERS);
 	}
 
 	@Override
@@ -223,7 +203,7 @@ public class CommandCapabilities extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
@@ -233,6 +213,12 @@ public class CommandCapabilities extends ForgeEssentialsCommandBase
 			return getListOfStringsMatchingLastWord(args, "true", "false");
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 
 }

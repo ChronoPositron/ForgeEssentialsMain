@@ -6,18 +6,19 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.RegGroup;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.core.PlayerInfo;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 import com.ForgeEssentials.util.TeleportCenter;
 import com.ForgeEssentials.util.AreaSelector.WarpPoint;
 
-public class CommandHome extends ForgeEssentialsCommandBase
+public class CommandHome extends FEcmdModuleCommands
 {
-
 	@Override
 	public String getCommandName()
 	{
@@ -29,7 +30,6 @@ public class CommandHome extends ForgeEssentialsCommandBase
 	{
 		if (args.length == 0)
 		{
-			// homes aren't saving...
 			WarpPoint home = PlayerInfo.getPlayerInfo(sender.username).home;
 			if (home == null)
 			{
@@ -66,7 +66,7 @@ public class CommandHome extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsMatchingLastWord(args, "here");
@@ -78,5 +78,17 @@ public class CommandHome extends ForgeEssentialsCommandBase
 	public boolean canConsoleUseCommand()
 	{
 		return false;
+	}
+
+	@Override
+	public void registerExtraPermissions(IPermRegisterEvent event)
+	{
+		event.registerPermissionLevel(getCommandPerm() + ".set", getReggroup());
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.MEMBERS;
 	}
 }

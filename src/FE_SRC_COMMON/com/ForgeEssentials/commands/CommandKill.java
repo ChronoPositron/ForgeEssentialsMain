@@ -1,23 +1,23 @@
 package com.ForgeEssentials.commands;
 
-import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.DamageSource;
 
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.RegGroup;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
-public class CommandKill extends ForgeEssentialsCommandBase
+public class CommandKill extends FEcmdModuleCommands
 {
 
 	@Override
@@ -31,18 +31,11 @@ public class CommandKill extends ForgeEssentialsCommandBase
 	{
 		if (args.length >= 1 && PermissionsAPI.checkPermAllowed(new PermQueryPlayer(sender, getCommandPerm() + ".others")))
 		{
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer victim : players)
-				{
-					victim.attackEntityFrom(DamageSource.outOfWorld, 1000);
-					victim.sendChatToPlayer(Localization.get(Localization.KILLED));
-				}
+				player.attackEntityFrom(DamageSource.outOfWorld, 1000);
+				player.sendChatToPlayer(Localization.get("command.kill.msg"));
 			}
 			else
 			{
@@ -52,7 +45,7 @@ public class CommandKill extends ForgeEssentialsCommandBase
 		else
 		{
 			sender.attackEntityFrom(DamageSource.outOfWorld, 1000);
-			sender.sendChatToPlayer(Localization.get(Localization.KILLED));
+			sender.sendChatToPlayer(Localization.get("command.kill.msg"));
 		}
 	}
 
@@ -61,18 +54,11 @@ public class CommandKill extends ForgeEssentialsCommandBase
 	{
 		if (args.length >= 1)
 		{
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer victim : players)
-				{
-					victim.attackEntityFrom(DamageSource.outOfWorld, 1000);
-					victim.sendChatToPlayer(Localization.get(Localization.KILLED));
-				}
+				player.attackEntityFrom(DamageSource.outOfWorld, 1000);
+				player.sendChatToPlayer(Localization.get("command.kill.msg"));
 			}
 			else
 			{
@@ -98,12 +84,24 @@ public class CommandKill extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public void registerExtraPermissions(IPermRegisterEvent event)
+	{
+		event.registerPermissionLevel(getCommandPerm() + ".others", RegGroup.OWNERS);
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 
 }

@@ -3,14 +3,13 @@ package com.ForgeEssentials.afterlife;
 import java.util.HashMap;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockSkull;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.Packet100OpenWindow;
-import net.minecraft.tileentity.TileEntitySkull;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -22,6 +21,8 @@ import com.ForgeEssentials.api.data.ClassContainer;
 import com.ForgeEssentials.api.data.DataStorageManager;
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
+import com.ForgeEssentials.util.Localization;
+import com.ForgeEssentials.util.OutputHandler;
 import com.ForgeEssentials.util.AreaSelector.WorldPoint;
 import com.ForgeEssentials.util.events.PlayerBlockBreak;
 
@@ -33,18 +34,24 @@ public class Deathchest
 	/**
 	 * This permission is needed to get the skull, Default = members.
 	 */
-	public static final String		PERMISSION	= ModuleAfterlife.BASEPERM + ".deathchest";
+	public static final String		PERMISSION_MAKE		= ModuleAfterlife.BASEPERM + ".deathchest.make";
+
+	/**
+	 * This is the permission that allows you to bypass the protection timer.
+	 */
+	public static final String		PERMISSION_BYPASS	= ModuleAfterlife.BASEPERM + ".deathchest.protectionBypass";
 
 	public static boolean			enable;
 	public static boolean			enableXP;
 	public static boolean			enableFencePost;
 	public static int				protectionTime;
 
-	public HashMap<String, Grave>	gravemap	= new HashMap<String, Grave>();
-	private ClassContainer			graveType	= new ClassContainer(Grave.class);
+	public HashMap<String, Grave>	gravemap			= new HashMap<String, Grave>();
+	private ClassContainer			graveType			= new ClassContainer(Grave.class);
 
 	public Deathchest()
 	{
+		TileEntity.addMapping(FEskullTe.class, "FESkull");
 		MinecraftForge.EVENT_BUS.register(this);
 		TickRegistry.registerScheduledTickHandler(new GraveProtectionTicker(this), Side.SERVER);
 	}
@@ -71,7 +78,7 @@ public class Deathchest
 	{
 		if (!enable)
 			return;
-		if (!PermissionsAPI.checkPermAllowed(new PermQueryPlayer(e.entityPlayer, PERMISSION)))
+		if (!PermissionsAPI.checkPermAllowed(new PermQueryPlayer(e.entityPlayer, PERMISSION_MAKE)))
 			return;
 		WorldPoint point = new WorldPoint(e.entityPlayer);
 		World world = e.entityPlayer.worldObj;
@@ -82,15 +89,15 @@ public class Deathchest
 		{
 			e.setCanceled(true);
 
-			if(enableFencePost)
+			if (enableFencePost)
 			{
 				world.setBlock(point.x, point.y, point.z, Block.fence.blockID);
 				point.y++;
 			}
 			new Grave(point, e.entityPlayer, e.drops, this);
 
-			world.setBlockAndMetadata(point.x, point.y, point.z, Block.skull.blockID, 1);
-			TileEntitySkull te = (TileEntitySkull) ((BlockSkull) Block.skull).createNewTileEntity(world);
+			world.setBlock(point.x, point.y, point.z, Block.skull.blockID, 1, 1);
+			FEskullTe te = new FEskullTe();
 			te.setSkullType(3, e.entityPlayer.username);
 			world.setBlockTileEntity(point.x, point.y, point.z, te);
 		}
@@ -110,35 +117,32 @@ public class Deathchest
 				Grave grave = gravemap.get(point.toString());
 				if (e.entity.worldObj.getBlockId(e.x, e.y, e.z) == Block.skull.blockID)
 				{
-					if (grave.protEnable)
+					if (!grave.canOpen(e.entityPlayer))
 					{
-						e.entityPlayer.sendChatToPlayer("This grave is still under Notch's protection.");
+						OutputHandler.chatWarning(e.entityPlayer, Localization.get("message.afterlife.protectionEnabled"));
 						e.setCanceled(true);
 					}
 					else
 					{
-						if (e.action == PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK)
+						EntityPlayerMP player = (EntityPlayerMP) e.entityPlayer;
+
+						if (player.openContainer != player.inventoryContainer)
 						{
-							EntityPlayerMP player = (EntityPlayerMP) e.entityPlayer;
-
-							if (player.openContainer != player.inventoryContainer)
-							{
-								player.closeScreen();
-							}
-							player.incrementWindowID();
-
-							InventoryGrave invGrave = new InventoryGrave(grave);
-							player.playerNetServerHandler.sendPacketToPlayer(new Packet100OpenWindow(player.currentWindowId, 0, invGrave.getInvName(), invGrave.getSizeInventory()));
-							player.openContainer = new ContainerChest(player.inventory, invGrave);
-							player.openContainer.windowId = player.currentWindowId;
-							player.openContainer.addCraftingToCrafters(player);
-							e.setCanceled(true);
+							player.closeScreen();
 						}
+						player.incrementWindowID();
+
+						InventoryGrave invGrave = new InventoryGrave(grave);
+						player.playerNetServerHandler.sendPacketToPlayer(new Packet100OpenWindow(player.currentWindowId, 0, invGrave.getInvName(), invGrave.getSizeInventory(), true));
+						player.openContainer = new ContainerChest(player.inventory, invGrave);
+						player.openContainer.windowId = player.currentWindowId;
+						player.openContainer.addCraftingToCrafters(player);
+						e.setCanceled(true);
 					}
 				}
 				else
 				{
-					removeGrave(grave, false);
+					removeGrave(grave, true);
 				}
 			}
 		}
@@ -159,6 +163,8 @@ public class Deathchest
 
 	public void removeGrave(Grave grave, boolean mined)
 	{
+		if (grave == null)
+			return;
 		DataStorageManager.getReccomendedDriver().deleteObject(graveType, grave.point.toString());
 		gravemap.remove(grave.point.toString());
 		if (mined)
@@ -175,21 +181,23 @@ public class Deathchest
 					e.printStackTrace();
 				}
 			}
+			
+			int orbs = 10;
+			int XPperorb = (grave.xp / 10);
 
-			for (int i = 0; i < 10; i++)
+			for (int i = 0; i < orbs; i++)
 			{
-				try
-				{
-					int xp = grave.xp / 10;
-					if (xp == 0)
-						break;
-					EntityXPOrb entity = new EntityXPOrb(DimensionManager.getWorld(grave.point.dim), grave.point.x, grave.point.y, grave.point.z, xp);
-					DimensionManager.getWorld(grave.point.dim).spawnEntityInWorld(entity);
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-				}
+			    if (XPperorb == 0) break;
+			    EntityXPOrb entity = new EntityXPOrb(DimensionManager.getWorld(grave.point.dim), grave.point.x, grave.point.y, grave.point.z, XPperorb);
+                DimensionManager.getWorld(grave.point.dim).spawnEntityInWorld(entity);
+                
+                grave.xp = grave.xp - XPperorb;
+			}
+			
+			if (grave.xp != 0)
+			{
+			    EntityXPOrb entity = new EntityXPOrb(DimensionManager.getWorld(grave.point.dim), grave.point.x, grave.point.y, grave.point.z, grave.xp);
+                DimensionManager.getWorld(grave.point.dim).spawnEntityInWorld(entity);
 			}
 		}
 	}

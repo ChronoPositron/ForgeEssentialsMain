@@ -1,18 +1,12 @@
 package com.ForgeEssentials.util;
 
 //Depreciated
-import java.io.Serializable;
-
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
-public class BlockSaveable implements Serializable
+public class BlockSaveable
 {
-	/**
-	 * 
-	 */
-	private static final long	serialVersionUID	= 7134842755892862662L;
 	private int					x;
 	private int					y;
 	private int					z;
@@ -45,17 +39,21 @@ public class BlockSaveable implements Serializable
 				tile = compound;
 			}
 			catch (Exception e)
-			{}
+			{
+			}
 		}
 	}
 
 	@Override
 	public boolean equals(Object object)
 	{
+		if (object == null)
+			return false;
+		
 		if (object instanceof BlockSaveable)
 		{
 			BlockSaveable block = (BlockSaveable) object;
-			return x == block.x && y == block.y && z == block.z && blockID == block.blockID && metadata == block.metadata && tile.equals(block.tile);
+			return blockID == block.blockID && metadata == block.metadata && tile.equals(block.tile);
 		}
 		return false;
 	}
@@ -69,7 +67,7 @@ public class BlockSaveable implements Serializable
 		if (equals(new BlockSaveable(world, x, y, z)))
 			return false;
 
-		world.setBlockAndMetadata(x, y, z, blockID, metadata);
+		world.setBlock(x, y, z, blockID, metadata, 1);
 		TileEntity entity = world.getBlockTileEntity(x, y, z);
 		if (entity != null && tile != null)
 		{

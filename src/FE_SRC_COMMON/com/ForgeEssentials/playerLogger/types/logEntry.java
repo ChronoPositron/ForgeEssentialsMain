@@ -1,10 +1,7 @@
 package com.ForgeEssentials.playerLogger.types;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.List;
 
 public abstract class logEntry
 {
@@ -21,7 +18,4 @@ public abstract class logEntry
 	public abstract String getTableCreateSQL();
 
 	public abstract String getprepareStatementSQL();
-
-	public abstract void makeEntries(Connection connection, List<logEntry> buffer) throws SQLException;
-
 }

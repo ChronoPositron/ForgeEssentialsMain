@@ -12,8 +12,9 @@ import cpw.mods.fml.common.ModMetadata;
 
 public class FEModContainer extends DummyModContainer
 {
+	public static final String	version	= "@VERSION@";
 
-	public boolean	mod;
+	public boolean				mod;
 
 	public FEModContainer()
 	{
@@ -22,9 +23,9 @@ public class FEModContainer extends DummyModContainer
 		ModMetadata myMeta = super.getMetadata();
 		myMeta.authorList = Arrays.asList(new String[]
 		{ "See the ForgeEssentials author list." });
-		myMeta.description = "The preloader for Forge Essentials.";
+		myMeta.description = "Does needed setup for ForgeEssentials.";
 		myMeta.modId = "FEPreLoader";
-		myMeta.version = "@VERSION@";
+		myMeta.version = version;
 		myMeta.name = "Forge Essentials|PreLoader";
 		myMeta.url = "";
 	}
@@ -35,5 +36,4 @@ public class FEModContainer extends DummyModContainer
 		bus.register(this);
 		return true;
 	}
-
 }

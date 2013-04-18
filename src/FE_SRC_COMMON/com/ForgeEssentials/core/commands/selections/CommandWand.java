@@ -1,6 +1,8 @@
 package com.ForgeEssentials.core.commands.selections;
 
 //Depreciated
+import java.util.List;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 
@@ -62,7 +64,7 @@ public class CommandWand extends ForgeEssentialsCommandBase
 				}
 				else
 				{
-					OutputHandler.chatError(sender, Localization.get(Localization.ERROR_PERMDENIED));
+					OutputHandler.chatError(sender, Localization.get(Localization.ERROR_NOUSEWAND));
 					return;
 				}
 			}
@@ -86,7 +88,7 @@ public class CommandWand extends ForgeEssentialsCommandBase
 				}
 				else
 				{
-					OutputHandler.chatError(sender, Localization.get(Localization.ERROR_PERMDENIED));
+					OutputHandler.chatError(sender, Localization.get(Localization.ERROR_NOUSEWAND));
 					return;
 				}
 			}
@@ -111,7 +113,7 @@ public class CommandWand extends ForgeEssentialsCommandBase
 				}
 				else
 				{
-					OutputHandler.chatError(sender, Localization.get(Localization.ERROR_PERMDENIED));
+					OutputHandler.chatError(sender, Localization.get(Localization.ERROR_NOUSEWAND));
 					return;
 				}
 			}
@@ -143,20 +145,24 @@ public class CommandWand extends ForgeEssentialsCommandBase
 	@Override
 	public void processCommandConsole(ICommandSender sender, String[] args)
 	{
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public boolean canConsoleUseCommand()
 	{
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public String getCommandPerm()
 	{
-		return "ForgeEssentials.BasicCommands.wand";
+		return "ForgeEssentials.CoreCommands.select.wand";
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+
+		return null;
 	}
 }

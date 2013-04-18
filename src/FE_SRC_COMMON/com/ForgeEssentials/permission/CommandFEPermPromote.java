@@ -20,7 +20,7 @@ public class CommandFEPermPromote
 			// Localization.get(Localization.ERROR_BADSYNTAX) + "");
 			return;
 
-		EntityPlayerMP player = FunctionHelper.getPlayerFromPartialName(args[0]);
+		EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
 		if (player == null)
 		{
 			// No such player!

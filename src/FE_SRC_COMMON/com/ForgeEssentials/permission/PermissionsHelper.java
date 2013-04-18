@@ -11,17 +11,61 @@ import com.ForgeEssentials.api.permissions.IPermissionsHelper;
 import com.ForgeEssentials.api.permissions.RegGroup;
 import com.ForgeEssentials.api.permissions.Zone;
 import com.ForgeEssentials.api.permissions.ZoneManager;
-import com.ForgeEssentials.util.FunctionHelper;
+import com.ForgeEssentials.api.permissions.query.PermQuery;
+import com.ForgeEssentials.api.permissions.query.PermQuery.PermResult;
+import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
+import com.ForgeEssentials.api.permissions.query.PropQuery;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.AreaSelector.WorldPoint;
+import com.ForgeEssentials.util.events.ModifyPlayerGroupEvent.AddPlayerGroupEvent;
+import com.ForgeEssentials.util.events.ModifyPlayerGroupEvent.RemovePlayerGroupEvent;
+import com.ForgeEssentials.util.events.ModifyPlayerGroupEvent.SetPlayerGroupEvent;
+import com.ForgeEssentials.util.events.PermissionPropSetEvent;
 import com.ForgeEssentials.util.events.PermissionSetEvent;
 
+@SuppressWarnings("rawtypes")
 public class PermissionsHelper implements IPermissionsHelper
 {
 	public final String	EntryPlayer	= "_ENTRY_PLAYER_";
 	private String		EPPrefix	= "";
 	private String		EPSuffix	= "";
 	private Group		DEFAULT		= new Group(RegGroup.ZONE.toString(), " ", " ", null, ZoneManager.getGLOBAL().getZoneName(), 0);
+
+	@Override
+	public boolean checkPermAllowed(PermQuery query)
+	{
+		if (query instanceof PermQueryPlayer)
+		{
+			PermissionsPlayerHandler.parseQuery((PermQueryPlayer) query);
+		}
+		else
+		{
+			PermissionsBlanketHandler.parseQuery(query);
+		}
+
+		return query.isAllowed();
+	}
+
+	@Override
+	public PermResult checkPermResult(PermQuery query)
+	{
+		if (query instanceof PermQueryPlayer)
+		{
+			PermissionsPlayerHandler.parseQuery((PermQueryPlayer) query);
+		}
+		else
+		{
+			PermissionsBlanketHandler.parseQuery(query);
+		}
+
+		return query.getResult();
+	}
+
+	@Override
+	public void getPermissionProp(PropQuery query)
+	{
+		PermissionsPropHandler.handleQuery(query);
+	}
 
 	@Override
 	public Group createGroupInZone(String groupName, String zoneName, String prefix, String suffix, String parent, int priority)
@@ -49,6 +93,36 @@ public class PermissionsHelper implements IPermissionsHelper
 
 			SqlHelper.generatePlayer(username);
 			boolean worked = SqlHelper.setPermission(username, false, perm, zoneID);
+
+			if (!worked)
+				return Localization.get(Localization.ERROR_PERM_SQL);
+		}
+		catch (Throwable t)
+		{
+			return t.getLocalizedMessage();
+		}
+
+		return null;
+	}
+
+	@Override
+	public String setPlayerPermissionProp(String username, String permission, String value, String zoneID)
+	{
+		try
+		{
+			Zone zone = ZoneManager.getZone(zoneID);
+			if (zone == null)
+				return Localization.format(Localization.ERROR_ZONE_NOZONE, zoneID);
+
+			PermissionProp perm = new PermissionProp(permission, value);
+
+			// send out permission string.
+			PermissionPropSetEvent event = new PermissionPropSetEvent(perm, zone, "p:" + username);
+			if (MinecraftForge.EVENT_BUS.post(event))
+				return event.getCancelReason();
+
+			SqlHelper.generatePlayer(username);
+			boolean worked = SqlHelper.setPermProp(username, false, perm, zoneID);
 
 			if (!worked)
 				return Localization.get(Localization.ERROR_PERM_SQL);
@@ -95,25 +169,38 @@ public class PermissionsHelper implements IPermissionsHelper
 		return null;
 	}
 
-	// ill recreate it when I need it...
-	//
-	// /**
-	// * Gets all the groups that were explicitly created in the given zone.
-	// these groups will only apply
-	// * to the given Zone and all of its children.
-	// * @param zoneID zone to check.
-	// * @return List of Groups. may be an empty list, but never null.
-	// */
-	// protected ArrayList<Group> getAllGroupsCreatedForZone(String
-	// zoneID)
-	// {
-	// ArrayList<Group> gs = new ArrayList<Group>();
-	// for (Group g : groups.values())
-	// if (g.zoneID.equals(zoneID))
-	// gs.add(g);
-	//
-	// return gs;
-	// }
+	@Override
+	public String setGroupPermissionProp(String group, String permission, String value, String zoneID)
+	{
+		try
+		{
+			Zone zone = ZoneManager.getZone(zoneID);
+			if (zone == null)
+				return Localization.format(Localization.ERROR_ZONE_NOZONE, zoneID);
+
+			Group g = SqlHelper.getGroupForName(group);
+			if (g == null)
+				return Localization.format("message.error.nogroup", group);
+
+			PermissionProp perm = new PermissionProp(permission, value);
+
+			// send out permission string.
+			PermissionPropSetEvent event = new PermissionPropSetEvent(perm, zone, "g:" + group);
+			if (MinecraftForge.EVENT_BUS.post(event))
+				return event.getCancelReason();
+
+			boolean worked = SqlHelper.setPermProp(group, true, perm, zoneID);
+
+			if (!worked)
+				return Localization.get(Localization.ERROR_PERM_SQL);
+		}
+		catch (Throwable t)
+		{
+			return t.getLocalizedMessage();
+		}
+
+		return null;
+	}
 
 	@Override
 	public ArrayList<Group> getApplicableGroups(EntityPlayer player, boolean includeDefaults)
@@ -128,14 +215,21 @@ public class PermissionsHelper implements IPermissionsHelper
 	{
 		ArrayList<Group> list = new ArrayList<Group>();
 
-		ArrayList<Group> temp;
+		Zone zone = ZoneManager.getZone(zoneID);
 
-		temp = SqlHelper.getGroupsForPlayer(player, zoneID);
-		if (temp.isEmpty())
+		while (zone != null)
 		{
-			temp = SqlHelper.getGroupsForPlayer(player, ZoneManager.getGLOBAL().getZoneName());
+			list.addAll(SqlHelper.getGroupsForPlayer(player, zone.getZoneName()));
+
+			if (zone == ZoneManager.getGLOBAL())
+			{
+				zone = null;
+			}
+			else
+			{
+				zone = ZoneManager.getZone(zone.parent);
+			}
 		}
-		list.addAll(temp);
 
 		if (includeDefaults)
 		{
@@ -143,6 +237,12 @@ public class PermissionsHelper implements IPermissionsHelper
 		}
 
 		return list;
+	}
+
+	@Override
+	public ArrayList<String> getPlayersInGroup(String group, String zone)
+	{
+	    return SqlHelper.getPlayersForGroup(group, zone);
 	}
 
 	@Override
@@ -179,6 +279,10 @@ public class PermissionsHelper implements IPermissionsHelper
 	@Override
 	public String setPlayerGroup(String group, String player, String zone)
 	{
+	    SetPlayerGroupEvent event = new SetPlayerGroupEvent(group, player, zone);
+        if (MinecraftForge.EVENT_BUS.post(event))
+            return event.getCancelReason();
+        
 		SqlHelper.generatePlayer(player);
 		return SqlHelper.setPlayerGroup(group, player, zone);
 	}
@@ -187,12 +291,25 @@ public class PermissionsHelper implements IPermissionsHelper
 	public String addPlayerToGroup(String group, String player, String zone)
 	{
 		SqlHelper.generatePlayer(player);
-		return SqlHelper.addPlayerGroup(group, player, zone);
+		if (getApplicableGroups(player, false, zone).contains(getGroupForName(group)))
+			return "Player already in group.";
+		else
+		{
+		    AddPlayerGroupEvent event = new AddPlayerGroupEvent(group, player, zone);
+		    if (MinecraftForge.EVENT_BUS.post(event))
+		        return event.getCancelReason();
+		        
+			return SqlHelper.addPlayerGroup(group, player, zone);
+		}
 	}
 
 	@Override
 	public String clearPlayerGroup(String group, String player, String zone)
 	{
+	    RemovePlayerGroupEvent event = new RemovePlayerGroupEvent(group, player, zone);
+        if (MinecraftForge.EVENT_BUS.post(event))
+            return event.getCancelReason();
+        
 		SqlHelper.generatePlayer(player);
 		return SqlHelper.removePlayerGroup(group, player, zone);
 	}
@@ -202,6 +319,13 @@ public class PermissionsHelper implements IPermissionsHelper
 	{
 		SqlHelper.generatePlayer(player);
 		return SqlHelper.removePermission(player, false, node, zone);
+	}
+
+	@Override
+	public String clearPlayerPermissionProp(String player, String node, String zone)
+	{
+		SqlHelper.generatePlayer(player);
+		return SqlHelper.removePermissionProp(player, false, node, zone);
 	}
 
 	@Override
@@ -223,9 +347,27 @@ public class PermissionsHelper implements IPermissionsHelper
 	}
 
 	@Override
-	public ArrayList getGroupsInZone(String zoneName)
+	public String clearGroupPermissionProp(String name, String node, String zone)
+	{
+		return SqlHelper.removePermissionProp(name, true, node, zone);
+	}
+
+    @Override
+	public ArrayList<Group> getGroupsInZone(String zoneName)
 	{
 		return SqlHelper.getGroupsInZone(zoneName);
+	}
+
+	@Override
+	public String getPermissionForPlayer(String target, String zone, String perm)
+	{
+		return SqlHelper.getPermission(target, false, perm, zone);
+	}
+
+	@Override
+	public String getPermissionPropForPlayer(String target, String zone, String perm)
+	{
+		return SqlHelper.getPermissionProp(target, false, perm, zone);
 	}
 
 	@Override
@@ -235,15 +377,91 @@ public class PermissionsHelper implements IPermissionsHelper
 	}
 
 	@Override
-	public ArrayList getPlayerPermissions(String target, String zone)
+	public String getPermissionPropForGroup(String target, String zone, String perm)
 	{
-		return SqlHelper.getAllPermissions(target, zone, 0);
+		return SqlHelper.getPermissionProp(target, true, perm, zone);
 	}
 
 	@Override
-	public ArrayList getGroupPermissions(String target, String zone)
+	public ArrayList getPlayerPermissions(String target, String zone)
 	{
-		return SqlHelper.getAllPermissions(target, zone, 1);
+		ArrayList<String> output = new ArrayList<String>();
+
+		if (zone == null)
+		{
+			output.add(Localization.format(Localization.ERROR_ZONE_NOZONE, zone));
+		}
+		else
+		{
+			for (Permission perm : SqlHelper.getAllPermissions(target, zone, false))
+				output.add(perm.toString());
+		}
+
+		return output;
+	}
+
+	@Override
+	public ArrayList getPlayerPermissionProps(String target, String zone)
+	{
+		ArrayList<String> output = new ArrayList<String>();
+
+		if (zone == null)
+		{
+			output.add(Localization.format(Localization.ERROR_ZONE_NOZONE, zone));
+		}
+		else
+		{
+			for (Permission perm : SqlHelper.getAllPermissions(target, zone, true))
+				output.add(perm.toString());
+		}
+
+		return output;
+	}
+
+	@Override
+	public ArrayList<String> getGroupPermissions(String target, String zone)
+	{
+		ArrayList<String> output = new ArrayList<String>();
+		Group g = SqlHelper.getGroupForName(target);
+
+		if (zone == null)
+		{
+			output.add(Localization.format(Localization.ERROR_ZONE_NOZONE, zone));
+		}
+		else if (g == null)
+		{
+			output.add(Localization.format("message.error.nogroup", target));
+		}
+		else
+		{
+			for (Permission perm : SqlHelper.getAllPermissions(target, zone, true))
+				output.add(perm.toString());
+		}
+
+		return output;
+	}
+
+	@Override
+	public ArrayList<String> getGroupPermissionProps(String target, String zone)
+	{
+		ArrayList<String> output = new ArrayList<String>();
+		Group g = SqlHelper.getGroupForName(target);
+
+		if (zone == null)
+		{
+			output.add(Localization.format(Localization.ERROR_ZONE_NOZONE, zone));
+		}
+		else if (g == null)
+		{
+			output.add(Localization.format("message.error.nogroup", target));
+		}
+		else
+		{
+			for (Permission perm : SqlHelper.getAllPermissions(target, zone, true))
+				output.add(perm.toString());
+		}
+
+		return output;
 	}
 
 	@Override

@@ -1,17 +1,20 @@
 package com.ForgeEssentials.commands;
 
+import java.util.List;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.core.PlayerInfo;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 import com.ForgeEssentials.util.TeleportCenter;
 import com.ForgeEssentials.util.AreaSelector.WarpPoint;
 
-public class CommandBack extends ForgeEssentialsCommandBase
+public class CommandBack extends FEcmdModuleCommands
 {
 	@Override
 	public String getCommandName()
@@ -22,7 +25,7 @@ public class CommandBack extends ForgeEssentialsCommandBase
 	@Override
 	public void processCommandPlayer(EntityPlayer sender, String[] args)
 	{
-		PlayerInfo info = PlayerInfo.getPlayerInfo(sender);
+		PlayerInfo info = PlayerInfo.getPlayerInfo(sender.username);
 		if (info.back != null)
 		{
 			WarpPoint death = info.back;
@@ -32,7 +35,7 @@ public class CommandBack extends ForgeEssentialsCommandBase
 		}
 		else
 		{
-			OutputHandler.chatError(sender, Localization.get(Localization.ERROR_NODEATHPOINT));
+			OutputHandler.chatError(sender, Localization.get("command.back.noback"));
 		}
 	}
 
@@ -51,6 +54,18 @@ public class CommandBack extends ForgeEssentialsCommandBase
 	public String getCommandPerm()
 	{
 		return "ForgeEssentials.BasicCommands." + getCommandName();
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.MEMBERS;
 	}
 
 }

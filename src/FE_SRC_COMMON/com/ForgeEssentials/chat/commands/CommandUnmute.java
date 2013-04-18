@@ -8,6 +8,8 @@ import net.minecraft.nbt.NBTTagCompound;
 
 import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
 import com.ForgeEssentials.util.FunctionHelper;
+import com.ForgeEssentials.util.Localization;
+import com.ForgeEssentials.util.OutputHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
@@ -21,7 +23,7 @@ public class CommandUnmute extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
@@ -34,16 +36,18 @@ public class CommandUnmute extends ForgeEssentialsCommandBase
 	{
 		if (args.length == 1)
 		{
-			EntityPlayer receiver = FunctionHelper.getPlayerFromPartialName(args[0]);
+			EntityPlayer receiver = FunctionHelper.getPlayerForName(sender, args[0]);
 			if (receiver == null)
 			{
-				sender.sendChatToPlayer(args[0] + " is not a valid username");
+				OutputHandler.chatError(receiver, Localization.format(Localization.ERROR_NOPLAYER, args[0]));
 				return;
 			}
 			NBTTagCompound tag = receiver.getEntityData().getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
 			tag.setBoolean("mute", false);
 			receiver.getEntityData().setCompoundTag(EntityPlayer.PERSISTED_NBT_TAG, tag);
-			sender.sendChatToPlayer(args[0] + " unmuted.");
+
+			OutputHandler.chatError(sender, Localization.format("command.unmute.youMuted", args[0]));
+			OutputHandler.chatError(receiver, Localization.format("command.unmute.muted", sender.getCommandSenderName()));
 		}
 	}
 
@@ -52,16 +56,18 @@ public class CommandUnmute extends ForgeEssentialsCommandBase
 	{
 		if (args.length == 1)
 		{
-			EntityPlayer receiver = FunctionHelper.getPlayerFromPartialName(args[0]);
+			EntityPlayer receiver = FunctionHelper.getPlayerForName(sender, args[0]);
 			if (receiver == null)
 			{
-				sender.sendChatToPlayer(args[0] + " is not a valid username");
+				OutputHandler.chatError(receiver, Localization.format(Localization.ERROR_NOPLAYER, args[0]));
 				return;
 			}
 			NBTTagCompound tag = receiver.getEntityData().getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
 			tag.setBoolean("mute", false);
 			receiver.getEntityData().setCompoundTag(EntityPlayer.PERSISTED_NBT_TAG, tag);
-			sender.sendChatToPlayer(args[0] + " unmuted.");
+
+			OutputHandler.chatError(sender, Localization.format("command.unmute.youMuted", args[0]));
+			OutputHandler.chatError(receiver, Localization.format("command.unmute.muted", sender.getCommandSenderName()));
 		}
 	}
 

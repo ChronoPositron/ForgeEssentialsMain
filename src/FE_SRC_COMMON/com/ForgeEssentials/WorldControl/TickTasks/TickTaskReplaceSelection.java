@@ -19,14 +19,9 @@ import com.ForgeEssentials.util.tasks.ITickTask;
 
 public class TickTaskReplaceSelection implements ITickTask
 {
-	/**
-	 * 
-	 */
-	private static final long	serialVersionUID	= -50878383585509101L;
 	private BackupArea			backup;
 	private EntityPlayer		player;
 	private int					changed;
-	private int					ticks;
 	private ArrayList<AreaBase>	applicable;
 
 	// Stores our actual task.
@@ -65,7 +60,6 @@ public class TickTaskReplaceSelection implements ITickTask
 	@Override
 	public void tick()
 	{
-		ticks++;
 		int currentTickChanged = 0;
 		boolean continueFlag = true;
 
@@ -126,7 +120,7 @@ public class TickTaskReplaceSelection implements ITickTask
 	private void doReplace(int x, int y, int z)
 	{
 		backup.before.add(new BlockSaveable(player.worldObj, x, y, z));
-		player.worldObj.setBlockAndMetadata(x, y, z, newId, newMeta);
+		player.worldObj.setBlock(x, y, z, newId, newMeta, 3);
 		backup.after.add(new BlockSaveable(player.worldObj, x, y, z));
 	}
 

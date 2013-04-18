@@ -4,13 +4,28 @@ import java.util.ArrayList;
 
 import net.minecraft.entity.player.EntityPlayer;
 
+import com.ForgeEssentials.api.permissions.query.PermQuery;
+import com.ForgeEssentials.api.permissions.query.PermQuery.PermResult;
+import com.ForgeEssentials.api.permissions.query.PropQuery;
+
+@SuppressWarnings("rawtypes")
 public interface IPermissionsHelper
 {
+	boolean checkPermAllowed(PermQuery query);
+
+	PermResult checkPermResult(PermQuery query);
+
+	void getPermissionProp(PropQuery query);
+
 	Group createGroupInZone(String groupName, String zoneName, String prefix, String suffix, String parent, int priority);
 
 	String setPlayerPermission(String username, String permission, boolean allow, String zoneID);
 
 	String setGroupPermission(String group, String permission, boolean allow, String zoneID);
+
+	String setPlayerPermissionProp(String username, String permission, String value, String zoneID);
+
+	String setGroupPermissionProp(String group, String permission, String value, String zoneID);
 
 	ArrayList<Group> getApplicableGroups(EntityPlayer player, boolean includeDefaults);
 
@@ -20,6 +35,8 @@ public interface IPermissionsHelper
 
 	Group getHighestGroup(EntityPlayer player);
 
+	ArrayList<String> getPlayersInGroup(String group, String zone);
+
 	String setPlayerGroup(String group, String player, String zone);
 
 	String addPlayerToGroup(String group, String player, String zone);
@@ -28,19 +45,33 @@ public interface IPermissionsHelper
 
 	String clearPlayerPermission(String player, String node, String zone);
 
+	String clearPlayerPermissionProp(String player, String node, String zone);
+
 	void deleteGroupInZone(String group, String zone);
 
 	boolean updateGroup(Group group);
 
 	String clearGroupPermission(String name, String node, String zone);
 
-	ArrayList getGroupsInZone(String zoneName);
+	String clearGroupPermissionProp(String name, String node, String zone);
+
+	ArrayList<Group> getGroupsInZone(String zoneName);
 
 	String getPermissionForGroup(String target, String zone, String perm);
 
+	String getPermissionPropForGroup(String target, String zone, String perm);
+	
+	String getPermissionForPlayer(String target, String zone, String perm);
+
+	String getPermissionPropForPlayer(String target, String zone, String perm);
+
 	ArrayList getPlayerPermissions(String target, String zone);
 
+	ArrayList getPlayerPermissionProps(String target, String zone);
+
 	ArrayList getGroupPermissions(String target, String zone);
+
+	ArrayList getGroupPermissionProps(String target, String zone);
 
 	String getEPPrefix();
 

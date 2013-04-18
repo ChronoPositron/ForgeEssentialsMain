@@ -1,5 +1,16 @@
 package com.ForgeEssentials.util;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+
+import net.minecraftforge.common.Configuration;
+
+import com.ForgeEssentials.core.ForgeEssentials;
+import com.google.common.base.Strings;
+
 import cpw.mods.fml.common.registry.LanguageRegistry;
 
 public class Localization
@@ -22,7 +33,6 @@ public class Localization
 	public static final String	HEALED							= "message.healed";
 	public static final String	SPAWNED							= "message.spawned";
 	public static final String	SPAWNSET						= "message.spawnset";
-	public static final String	NOROOM							= "message.noroom";
 	public static final String	POTIONEFFECTNOTFOUND			= "command.potion.effectnotfound";
 
 	/*
@@ -62,6 +72,7 @@ public class Localization
 	public static final String	ERROR_TARGET					= "message.error.target";
 	public static final String	ERROR_NOPAGE					= "message.error.nopage";
 	public static final String	ERROR_PERMDENIED				= "message.error.permdenied";
+	public static final String	ERROR_NOUSEWAND					= "message.error.cantUseWand";
 	public static final String	ERROR_NOITEMPLAYER				= "message.error.noItemPlayer";
 	public static final String	ERROR_NOITEMTARGET				= "message.error.noItemTarget";
 	public static final String	ERROR_NOMOB						= "message.error.noMobX";
@@ -107,86 +118,74 @@ public class Localization
 	public static final String	TC_ABORTED						= "message.tc.aborted";
 	public static final String	TC_DONE							= "message.tc.done";
 
-	/*
-	 * Chat
-	 */
-
-	public static final String	CHAT_NICK_SELF_REMOVE			= "message.chat.nick.self.remove";
-	public static final String	CHAT_NICK_SELF_SET				= "message.chat.nick.self.set";
-	public static final String	CHAT_NICK_OTHERS_REMOVE			= "message.chat.nick.others.remove";
-	public static final String	CHAT_NICK_OTHERS_SET			= "message.chat.nick.others.set";
-
-	/*
-	 * WorldBorder
-	 */
-
-	public static final String	WB_HITBORDER					= "message.wb.hitborder";
-
-	public static final String	WB_STATUS_HEADER				= "message.wb.status.header";
-	public static final String	WB_STATUS_BORDERSET				= "message.wb.status.borderset";
-	public static final String	WB_STATUS_BORDERNOTSET			= "message.wb.status.bordernotset";
-
-	public static final String	WB_LAGWARING					= "message.wb.lagwarning";
-
-	public static final String	WB_FILL_INFO					= "message.wb.fill.info";
-	public static final String	WB_FILL_CONFIRM					= "message.wb.fill.confirm";
-	public static final String	WB_FILL_ONLYONCE				= "message.wb.fill.onlyonce";
-	public static final String	WB_FILL_CONSOLENEEDSDIM			= "message.wb.fill.consoleneedsdim";
-	public static final String	WB_FILL_START					= "message.wb.fill.start";
-	public static final String	WB_FILL_STILLGOING				= "message.wb.fill.stillgoing";
-	public static final String	WB_FILL_DONE					= "message.wb.fill.done";
-	public static final String	WB_FILL_ETA						= "message.wb.fill.eta";
-	public static final String	WB_FILL_ABORTED					= "message.wb.fill.aborted";
-	public static final String	WB_FILL_FINISHED				= "message.wb.fill.finished";
-	public static final String	WB_FILL_UNLOADEDWOLD			= "message.wb.fill.worldunloaded";
-
-	public static final String	WB_SAVING_FAILED				= "message.wb.saving.failed";
-
-	public static final String	WB_TURBO_INFO					= "message.wb.turbo.info";
-	public static final String	WB_TURBO_CONFIRM				= "message.wb.turbo.confirm";
-	public static final String	WB_NOTHINGTODO					= "message.wb.nothingtodo";
-	public static final String	WB_TURBO_ON						= "message.wb.turbo.on";
-	public static final String	WB_TURBO_OFF					= "message.wb.turbo.off";
-
-	public static final String	WB_AUTO_INFO					= "message.wb.auto.info";
-	public static final String	WB_AUTO_CONFIRM					= "message.wb.auto.confirm";
-
-	public static final String	WB_SET							= "message.wb.set";
-
 	public static final String	UNIT_SECONDS					= "unit.seconds";
 
 	/*
-	 * Wallet
+	 * wallet
 	 */
 
-	public static final String	WALLET							= "message.wallet.walletname";
-	public static final String	WALLET_CURRENCY_SINGULAR		= "message.wallet.currencysingular";
-	public static final String	WALLET_CURRENCY_PLURAL			= "message.wallet.currencyplural";
-	public static final String	WALLET_SET						= "message.wallet.walletset";
-	public static final String	WALLET_SET_SELF					= "message.wallet.walletsetself";
-	public static final String	WALLET_SET_TARGET				= "message.wallet.walletsettarget";
-	public static final String	WALLET_ADD						= "message.wallet.walletadd";
-	public static final String	WALLET_ADD_SELF					= "message.wallet.walletaddself";
-	public static final String	WALLET_ADD_TARGET				= "message.wallet.walletaddtarget";
-	public static final String	WALLET_REMOVE					= "message.wallet.walletremove";
-	public static final String	WALLET_REMOVE_SELF				= "message.wallet.walletremoveself";
-	public static final String	WALLET_REMOVE_TARGET			= "message.wallet.walletremovetarget";
-	public static final String	WALLET_GET						= "message.wallet.walletget";
-	public static final String	WALLET_GET_SELF					= "message.wallet.walletgetself";
-	public static final String	WALLET_GET_TARGET				= "message.wallet.walletgettarget";
+	public static final String	wallet							= "message.wallet.walletname";
+	public static final String	wallet_CURRENCY_SINGULAR		= "message.wallet.currencysingular";
+	public static final String	wallet_CURRENCY_PLURAL			= "message.wallet.currencyplural";
+	public static final String	wallet_SET						= "message.wallet.walletset";
+	public static final String	wallet_SET_SELF					= "message.wallet.walletsetself";
+	public static final String	wallet_SET_TARGET				= "message.wallet.walletsettarget";
+	public static final String	wallet_ADD						= "message.wallet.walletadd";
+	public static final String	wallet_ADD_SELF					= "message.wallet.walletaddself";
+	public static final String	wallet_ADD_TARGET				= "message.wallet.walletaddtarget";
+	public static final String	wallet_REMOVE					= "message.wallet.walletremove";
+	public static final String	wallet_REMOVE_SELF				= "message.wallet.walletremoveself";
+	public static final String	wallet_REMOVE_TARGET			= "message.wallet.walletremovetarget";
+	public static final String	wallet_GET						= "message.wallet.walletget";
+	public static final String	wallet_GET_SELF					= "message.wallet.walletgetself";
+	public static final String	wallet_GET_TARGET				= "message.wallet.walletgettarget";
 
 	public static final String	COMMAND_DESELECT				= "message.wc.deselection";
 
 	public void load()
 	{
 		OutputHandler.finer("Loading languages");
-		String langDir = "/com/ForgeEssentials/util/lang/";
+
+		File folder = new File(ForgeEssentials.FEDIR, "lang");
+		boolean forceDl = false;
+		if (!folder.exists())
+		{
+			forceDl = true;
+			folder.mkdirs();
+		}
+
+		Configuration conf = new Configuration(new File(folder, "conf.cfg"));
+		forceDl = conf.get("Lang", "AutoUpdate", true, "Leave to true unless you make changes to the lang files.").getBoolean(true);
+		conf.save();
+
+		for (String langFile : langFiles)
+		{
+			File file = new File(folder, langFile);
+			if (!file.exists() || forceDl)
+			{
+				try
+				{
+					URL dl = new URL("https://raw.github.com/ForgeEssentials/FELocalizations/master/" + langFile);
+					ReadableByteChannel rbc = Channels.newChannel(dl.openStream());
+					FileOutputStream fos = new FileOutputStream(file);
+					fos.getChannel().transferFrom(rbc, 0, 1 << 24);
+					fos.close();
+				}
+				catch (Exception e)
+				{
+					OutputHandler.warning("Error while downloading " + langFile);
+					e.printStackTrace();
+				}
+
+			}
+		}
 
 		for (String langFile : langFiles)
 		{
 			try
 			{
-				LanguageRegistry.instance().loadLocalization(langDir + langFile, langFile.substring(langFile.lastIndexOf('/') + 1, langFile.lastIndexOf('.')), true);
+				File file = new File(folder.getAbsolutePath(), langFile);
+				LanguageRegistry.instance().loadLocalization(file.toURI().toURL(), file.getName().substring(0, file.getName().lastIndexOf(".")), true);
 				OutputHandler.info("Loaded language file " + langFile);
 			}
 			catch (Exception e)
@@ -199,7 +198,14 @@ public class Localization
 
 	public static String get(String key)
 	{
-		return LanguageRegistry.instance().getStringLocalization(key);
+		String output = LanguageRegistry.instance().getStringLocalization(key);
+
+		if (Strings.isNullOrEmpty(output))
+		{
+			output = LanguageRegistry.instance().getStringLocalization(key, "en_US");
+		}
+
+		return output;
 	}
 
 	/**
@@ -207,14 +213,20 @@ public class Localization
 	 * into it. A wrapper for all the
 	 * "String.format(Localization.get(key), ...)" calls in commands.
 	 * @param localizationKey
-	 *            Key to get the appropriate entry in the current localization
-	 *            file.
+	 * Key to get the appropriate entry in the current localization
+	 * file.
 	 * @param args
-	 *            Arguments required to populate the localized string
+	 * Arguments required to populate the localized string
 	 * @return String String containing the localized, formatted string.
 	 */
 	public static String format(String localizationKey, Object... args)
 	{
-		return String.format(get(localizationKey), args);
+		String output = get(localizationKey);
+		if (!output.equals(localizationKey))
+		{
+			output = String.format(output, args);
+		}
+
+		return output;
 	}
 }

@@ -2,12 +2,14 @@ package com.ForgeEssentials.util;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.Entity;
+import net.minecraft.command.ICommandSender;
+import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
@@ -20,16 +22,23 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 
-import com.ForgeEssentials.core.misc.ItemList;
+import com.ForgeEssentials.core.misc.FriendlyItemList;
+import com.ForgeEssentials.util.AreaSelector.Point;
 import com.ForgeEssentials.util.AreaSelector.WarpPoint;
-import com.ForgeEssentials.util.AreaSelector.WorldPoint;
+import com.google.common.base.Joiner;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
 public final class FunctionHelper
 {
 	/**
-	 * stolen from Item class
+	 * Get player's looking spot.
+	 * @param player
+	 * @param restrict
+	 * Keep max distance to 5.
+	 * @return
+	 * The position as a MovingObjectPosition
+	 * Null if not existent.
 	 */
 	public static MovingObjectPosition getPlayerLookingSpot(EntityPlayer player, boolean restrict)
 	{
@@ -55,6 +64,12 @@ public final class FunctionHelper
 		return player.worldObj.rayTraceBlocks_do_do(var13, var23, false, !true);
 	}
 
+	/**
+	 * Gets a nice string with only needed elements.
+	 * Max time is weeks
+	 * @param timeInSec
+	 * @return Time in string format
+	 */
 	public static String parseTime(int timeInSec)
 	{
 		String uptime = "";
@@ -92,6 +107,58 @@ public final class FunctionHelper
 		return uptime;
 	}
 
+	/**
+	 * DO NOT use this for commands
+	 * @param name
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static EntityPlayerMP getPlayerForName(String name)
+	{	
+		// tru exact match first.
+		{
+			EntityPlayerMP tempPlayer = FMLCommonHandler.instance().getMinecraftServerInstance().getConfigurationManager().getPlayerForUsername(name);
+			if (tempPlayer != null)
+				return tempPlayer;
+		}
+
+		// now try getting others
+		List<EntityPlayerMP> possibles = new LinkedList<EntityPlayerMP>();
+		ArrayList<EntityPlayerMP> temp = (ArrayList<EntityPlayerMP>) FMLCommonHandler.instance().getSidedDelegate().getServer().getConfigurationManager().playerEntityList;
+		for (EntityPlayerMP player : temp)
+		{
+			if (player.username.equalsIgnoreCase(name))
+				return player;
+
+			if (player.username.toLowerCase().contains(name.toLowerCase()))
+			{
+				possibles.add(player);
+			}
+		}
+		if (possibles.size() == 1)
+			return possibles.get(0);
+		return null;
+	}
+	
+	public static EntityPlayerMP getPlayerForName(ICommandSender sender, String name)
+	{
+        EntityPlayerMP var2 = PlayerSelector.matchOnePlayer(sender, name);
+
+        if (var2 != null)
+        {
+            return var2;
+        }
+        else
+        {
+        	return getPlayerForName(name);
+        }
+	}
+
+	/**
+	 * Make new Array with everything except the 1st string.
+	 * @param par0ArrayOfStr Old array
+	 * @return New array
+	 */
 	public static String[] dropFirstString(String[] par0ArrayOfStr)
 	{
 		String[] var1 = new String[par0ArrayOfStr.length - 1];
@@ -104,6 +171,12 @@ public final class FunctionHelper
 		return var1;
 	}
 
+	/**
+	 * Gets the zoneID for a world.
+	 * @param world
+	 * @return
+	 * The zoneID
+	 */
 	public static String getZoneWorldString(World world)
 	{
 		return "WORLD_" + world.provider.getDimensionName().replace(' ', '_') + "_" + world.provider.dimensionId;
@@ -115,41 +188,11 @@ public final class FunctionHelper
 	}
 
 	/**
-	 * Use WorldPoint(Entity)
-	 * @param entity
-	 * @return
-	 */
-	@Deprecated
-	public static WorldPoint getEntityPoint(Entity entity)
-	{
-		return new WorldPoint(entity);
-	}
-
-	public static EntityPlayerMP getPlayerFromPartialName(String username)
-	{
-		List possibles = new LinkedList<EntityPlayer>();
-		ArrayList<EntityPlayerMP> temp = (ArrayList<EntityPlayerMP>) FMLCommonHandler.instance().getSidedDelegate().getServer().getConfigurationManager().playerEntityList;
-		for (EntityPlayerMP player : temp)
-		{
-			if (player.username.equalsIgnoreCase(username))
-				return player;
-
-			if (player.username.toLowerCase().contains(username.toLowerCase()))
-			{
-				possibles.add(player);
-			}
-		}
-		if (possibles.size() == 1)
-			return (EntityPlayerMP) possibles.toArray()[0];
-		return null;
-	}
-
-	/**
 	 * does NOT check if its a valid BlockID and stuff.. this may be used for
 	 * items.
 	 * @return never NULL. always {0, -1}. Meta by default is -1.
 	 * @throws RuntimeException
-	 *             the message is a formatted chat string.
+	 * the message is a formatted chat string.
 	 */
 	public static int[] parseIdAndMetaFromString(String msg, boolean blocksOnly) throws RuntimeException
 	{
@@ -202,7 +245,7 @@ public final class FunctionHelper
 	{
 		if (blockOnly)
 		{
-			Block block = ItemList.instance().getBlockForName(name);
+			Block block = FriendlyItemList.instance().getBlockForName(name);
 			if (block == null)
 				return 0;
 			else
@@ -210,7 +253,7 @@ public final class FunctionHelper
 		}
 		else
 		{
-			Item item = ItemList.instance().getItemForName(name);
+			Item item = FriendlyItemList.instance().getItemForName(name);
 			if (item == null)
 				return 0;
 			else
@@ -218,6 +261,10 @@ public final class FunctionHelper
 		}
 	}
 
+	/**
+	 * please use your module dir!
+	 * @return
+	 */
 	public static File getBaseDir()
 	{
 		if (FMLCommonHandler.instance().getSide().isClient())
@@ -226,11 +273,16 @@ public final class FunctionHelper
 			return new File(".");
 	}
 
+	/**
+	 * OP detection
+	 * @param player
+	 * @return
+	 */
 	public static boolean isPlayerOp(String player)
 	{
 		if (FMLCommonHandler.instance().getEffectiveSide().isClient())
 			return true;
-		
+
 		MinecraftServer server = FMLCommonHandler.instance().getSidedDelegate().getServer();
 
 		// SP and LAN
@@ -244,26 +296,105 @@ public final class FunctionHelper
 		return server.getConfigurationManager().getOps().contains(player);
 	}
 
+	/**
+	 * Get tps per word.
+	 * @param dimID
+	 * @return
+	 * -1 if error
+	 */
 	public static double getTPS(int dimID)
 	{
-		MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-
-		long var2 = 0L;
-		long[] var4 = server.worldTickTimes.get(dimID);
-		int var5 = var4.length;
-
-		for (int var6 = 0; var6 < var5; ++var6)
+		try
 		{
-			long var7 = var4[var6];
-			var2 += var7;
+			MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+
+			long var2 = 0L;
+			long[] var4 = server.worldTickTimes.get(dimID);
+			int var5 = var4.length;
+
+			for (int var6 = 0; var6 < var5; ++var6)
+			{
+				long var7 = var4[var6];
+				var2 += var7;
+			}
+
+			double tps = (double) var2 / (double) var5 * 1.0E-6D;
+
+			if (tps < 50)
+				return 20;
+			else
+				return 1000 / tps;
 		}
+		catch (Exception e)
+		{
+			return -1;
+		}
+	}
 
-		double tps = (double) var2 / (double) var5 * 1.0E-6D;
+	/**
+	 * Get tps.
+	 * @return
+	 * -1 if error
+	 */
+	public static double getTPS()
+	{
+		try
+		{
+			MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
 
-		if (tps < 50)
-			return 20;
-		else
-			return 1000 / tps;
+			long var2 = 0L;
+			long[] var4 = server.tickTimeArray;
+			int var5 = var4.length;
+
+			for (int var6 = 0; var6 < var5; ++var6)
+			{
+				long var7 = var4[var6];
+				var2 += var7;
+			}
+
+			double tps = (double) var2 / (double) var5 * 1.0E-6D;
+
+			if (tps < 50)
+				return 20;
+			else
+				return 1000 / tps;
+		}
+		catch (Exception e)
+		{
+			return -1;
+		}
+	}
+
+	/**
+	 * @return The current date in form YYYY-MM-DD
+	 */
+	public static String getCurrentDateString()
+	{
+		Calendar c = Calendar.getInstance();
+
+		StringBuilder builder = new StringBuilder();
+		builder.append(c.get(Calendar.YEAR));
+		builder.append('-');
+		builder.append(c.get(Calendar.MONTH + 1));
+		builder.append('-');
+		builder.append(c.get(Calendar.DAY_OF_MONTH));
+
+		return builder.toString();
+	}
+
+	/**
+	 * @return the current Time in HH:mm format. 24hr clock.
+	 */
+	public static String getCurrentTimeString()
+	{
+		Calendar c = Calendar.getInstance();
+
+		StringBuilder builder = new StringBuilder();
+		builder.append(c.get(Calendar.HOUR_OF_DAY));
+		builder.append(':');
+		builder.append(c.get(Calendar.MINUTE));
+
+		return builder.toString();
 	}
 
 	/**
@@ -353,9 +484,64 @@ public final class FunctionHelper
 		return format;
 	}
 
+	/**
+	 * instWarp a player to a point. Please use TeleportCenter!
+	 * @param player
+	 * @param p
+	 */
 	public static void setPlayer(EntityPlayerMP player, WarpPoint p)
 	{
+		if (player.dimension != p.dim)
+		{
+			MinecraftServer.getServer().getConfigurationManager().transferPlayerToDimension(player, p.dim);
+		}
 		player.playerNetServerHandler.setPlayerLocation(p.xd, p.yd, p.zd, p.yaw, p.pitch);
+		player.prevPosX = player.posX = p.xd;
+		player.prevPosY = player.posY = p.yd;
+		player.prevPosZ = player.posZ = p.zd;
 	}
 
+	/**
+	 * instWarp a player to a point. Please use TeleportCenter!
+	 * @param player
+	 * @param world
+	 * @param p
+	 */
+	public static void setPlayer(EntityPlayerMP player, Point point, World world)
+	{
+		if (player.dimension != world.provider.dimensionId)
+		{
+			MinecraftServer.getServer().getConfigurationManager().transferPlayerToDimension(player, world.provider.dimensionId);
+		}
+		double x = point.x, y = point.y, z = point.z;
+		x = x < 0 ? x - 0.5 : x + 0.5;
+		z = z < 0 ? z - 0.5 : z + 0.5;
+		player.playerNetServerHandler.setPlayerLocation(x, y, z, player.rotationYaw, player.rotationPitch);
+	}
+
+	/**
+	 * Join string[] to print to users. "str1, str2, str3, ..., strn"
+	 * @param par0ArrayOfObj
+	 * @return
+	 */
+	public static String niceJoin(Object[] array)
+	{
+		return joiner.join(array);
+	}
+
+	// used for niceJoin method.
+	private static Joiner	joiner	= Joiner.on(", ").skipNulls();
+
+	public static boolean isNumeric(String string)
+	{
+		try
+		{
+			Integer.parseInt(string);
+			return true;
+		}
+		catch (NumberFormatException e)
+		{
+			return false;
+		}
+	}
 }

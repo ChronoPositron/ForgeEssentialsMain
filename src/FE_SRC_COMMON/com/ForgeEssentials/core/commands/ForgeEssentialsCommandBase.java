@@ -1,64 +1,24 @@
 package com.ForgeEssentials.core.commands;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.command.CommandBase;
-import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntityCommandBlock;
-import net.minecraftforge.common.Configuration;
 
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 
-import cpw.mods.fml.common.FMLCommonHandler;
-
 public abstract class ForgeEssentialsCommandBase extends CommandBase
 {
-	public boolean				enableCmdBlock	= true;
-	public boolean				enableConsole	= true;
-	public boolean				enablePlayer	= true;
-
-	public ArrayList<String>	aliasList		= new ArrayList();
-
-	// ---------------------------
-	// config interaction
-	// ---------------------------
-
-	/**
-	 * Override if you want config interaction.
-	 * @param config
-	 * @param category
-	 */
-	public void doConfig(Configuration config, String category)
-	{
-
-	}
-
 	@Override
-	public List getCommandAliases()
-	{
-		return aliasList;
-	}
-
-	public String[] getDefaultAliases()
-	{
-		return new String[] {};
-	}
-
-	public boolean usefullCmdBlock()
-	{
-		return canConsoleUseCommand();
-	}
-
-	public boolean usefullPlayer()
-	{
-		return true;
-	}
+    public boolean isUsernameIndex(String[] par1ArrayOfStr, int par1)
+    {
+        return true;
+    }
 
 	// ---------------------------
 	// processing command
@@ -188,24 +148,15 @@ public abstract class ForgeEssentialsCommandBase extends CommandBase
 	{
 		if (sender instanceof EntityPlayer)
 		{
-			if (!enablePlayer)
-				return false;
-			else
-				return canPlayerUseCommand((EntityPlayer) sender);
+			return canPlayerUseCommand((EntityPlayer) sender);
 		}
 		else if (sender instanceof TileEntityCommandBlock)
 		{
-			if (!enableCmdBlock)
-				return false;
-			else
-				return canCommandBlockUseCommand((TileEntityCommandBlock) sender);
+			return canCommandBlockUseCommand((TileEntityCommandBlock) sender);
 		}
 		else
 		{
-			if (!enableConsole)
-				return false;
-			else
-				return canConsoleUseCommand();
+			return canConsoleUseCommand();
 		}
 	}
 
@@ -229,7 +180,7 @@ public abstract class ForgeEssentialsCommandBase extends CommandBase
 	/**
 	 * Simply prints a usage message to the sender of the command.
 	 * @param sender
-	 *            Object that issued the command
+	 * Object that issued the command
 	 */
 	public void error(ICommandSender sender)
 	{
@@ -239,9 +190,9 @@ public abstract class ForgeEssentialsCommandBase extends CommandBase
 	/**
 	 * Prints an error message to the sender of the command.
 	 * @param sender
-	 *            Object that issued the command
+	 * Object that issued the command
 	 * @param message
-	 *            Error message
+	 * Error message
 	 */
 	public void error(ICommandSender sender, String message)
 	{
@@ -257,24 +208,40 @@ public abstract class ForgeEssentialsCommandBase extends CommandBase
 
 	public boolean checkCommandPerm(EntityPlayer player)
 	{
-		return PermissionsAPI.checkPermAllowed(new PermQueryPlayer(player, getCommandPerm()));
+		String perm = getCommandPerm();
+		if (perm == null)
+			return true;
+		else
+			return PermissionsAPI.checkPermAllowed(new PermQueryPlayer(player, perm));
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
-	{
-		if (args.length == 0)
-			return getListOfStringsFromIterableMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getCommandManager().getPossibleCommands(sender));
-		else
-			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
-	}
+	public abstract List<?> addTabCompletionOptions(ICommandSender sender, String[] args);
 
 	public abstract String getCommandPerm();
 
-    // synthetic method (TODO: fix in SSMP, then remove here)
-    public int compareTo(Object par1Obj)
+	/*
+	 * Helper methods
+	 */
+	
+	/**
+	 * Parse int with support for relative int.
+	 * @param sender
+	 * @param string
+	 * @param relativeStart
+	 * @return
+	 */
+	public int parseInt(ICommandSender sender, String string, double relativeStart)
     {
-        return this.compareNameTo((ICommand)par1Obj);
+        if (string.startsWith("~"))
+        {
+            string = string.substring(1);
+            return (int) (relativeStart + parseInt(sender, string));
+        }
+        else
+        {
+            return parseInt(sender, string);
+        }
     }
-    //
+    
 }

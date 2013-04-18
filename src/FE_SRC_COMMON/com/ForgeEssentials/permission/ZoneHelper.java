@@ -8,10 +8,12 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.world.World;
+import net.minecraftforge.event.EventPriority;
 import net.minecraftforge.event.ForgeSubscribe;
 import net.minecraftforge.event.world.WorldEvent.Load;
 
 import com.ForgeEssentials.api.data.ClassContainer;
+import com.ForgeEssentials.api.data.DataStorageManager;
 import com.ForgeEssentials.api.permissions.IZoneManager;
 import com.ForgeEssentials.api.permissions.Zone;
 import com.ForgeEssentials.util.FunctionHelper;
@@ -21,11 +23,14 @@ import com.ForgeEssentials.util.AreaSelector.WorldPoint;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
+@SuppressWarnings("unused")
 public class ZoneHelper implements IZoneManager
 {
 	// GLOBAL and WORLD zones.
-	private Zone	GLOBAL;
-	private Zone	SUPER;
+	private Zone						GLOBAL;
+	private Zone						SUPER;
+
+	public static final ClassContainer	container	= new ClassContainer(Zone.class);
 
 	public ZoneHelper()
 	{
@@ -37,12 +42,24 @@ public class ZoneHelper implements IZoneManager
 
 	protected void loadZones()
 	{
-		Object[] objs = ModulePermissions.data.loadAllObjects(new ClassContainer(Zone.class));
+		Object[] objs = ModulePermissions.data.loadAllObjects(container);
+
+		if (objs == null)
+			return;
+
 		Zone temp;
 		boolean exists;
 		for (Object obj : objs)
 		{
 			temp = (Zone) obj;
+
+			/*
+			if (temp == null || temp.getZoneName() == null || temp.getZoneName().isEmpty())
+			{
+				continue;
+			}
+			*/
+
 			zoneMap.put(temp.getZoneName(), temp);
 
 			exists = SqlHelper.doesZoneExist(temp.getZoneName());
@@ -60,7 +77,7 @@ public class ZoneHelper implements IZoneManager
 	protected ConcurrentHashMap<String, Zone>	worldZoneMap;
 
 	// to load WorldZones
-	@ForgeSubscribe
+	@ForgeSubscribe(priority = EventPriority.HIGH)
 	public void worldLoader(Load e) // thats the WorldLoad event.
 	{
 		if (FMLCommonHandler.instance().getEffectiveSide().isClient())
@@ -154,6 +171,7 @@ public class ZoneHelper implements IZoneManager
 		Zone created = new Zone(zoneID, sel, world);
 		zoneMap.put(zoneID, created);
 		SqlHelper.createZone(zoneID);
+		DataStorageManager.getReccomendedDriver().saveObject(ZoneHelper.container, created);
 		onZoneCreated(created);
 		return true;
 	}
@@ -222,15 +240,13 @@ public class ZoneHelper implements IZoneManager
 	@Override
 	public Zone getWhichZoneIn(WorldArea check)
 	{
-		
+
 		Zone end = getFromCache(check);
 		if (end != null)
 			return end;
 
 		Zone worldZone = getWorldZone(FunctionHelper.getDimension(check.dim));
 		ArrayList<Zone> zones = new ArrayList<Zone>();
-		int worldDim = check.dim;
-
 		// add all zones this point is in...
 		for (Zone zone : zoneMap.values())
 		{
@@ -285,7 +301,7 @@ public class ZoneHelper implements IZoneManager
 		pointCache.put(p, zoneID);
 	}
 
-	private void putCache(WorldArea a, String zoneID)
+    private void putCache(WorldArea a, String zoneID)
 	{
 		areaCache.put(a, zoneID);
 	}

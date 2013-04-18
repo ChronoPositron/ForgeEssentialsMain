@@ -1,28 +1,37 @@
 package com.ForgeEssentials.playerLogger.types;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Iterator;
-import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import com.ForgeEssentials.playerLogger.ModulePlayerLogger;
+
 public class playerTrackerLog extends logEntry
 {
-	public playerTrackerLogCategory	cat;
-	public String					username;
-	public String					extra;
-	public String					ip;
-
-	public playerTrackerLog(playerTrackerLogCategory cat, EntityPlayer player)
+	public playerTrackerLog(playerTrackerLogCategory cat, EntityPlayer player, String extra)
 	{
 		super();
-		this.cat = cat;
-		username = player.username;
-		ip = ((EntityPlayerMP) player).playerNetServerHandler.netManager.getSocketAddress().toString().substring(1);
+		String ip = ((EntityPlayerMP) player).playerNetServerHandler.netManager.getSocketAddress().toString().substring(1);
 		ip = ip.substring(0, ip.lastIndexOf(":"));
+		
+		try
+		{
+			PreparedStatement ps = ModulePlayerLogger.getConnection().prepareStatement(getprepareStatementSQL());
+			ps.setString(1, player.username);
+			ps.setString(2, cat.toString());
+			ps.setString(3, extra);
+			ps.setTimestamp(4, time);
+			ps.setString(5, ip);
+			ps.execute();
+			ps.clearParameters();
+			ps.close();
+		}
+		catch (SQLException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	public playerTrackerLog()
@@ -46,29 +55,6 @@ public class playerTrackerLog extends logEntry
 	public String getprepareStatementSQL()
 	{
 		return "INSERT INTO " + getName() + " (player, category, disciption, time, ip) VALUES (?,?,?,?,?);";
-	}
-
-	@Override
-	public void makeEntries(Connection connection, List<logEntry> buffer) throws SQLException
-	{
-		PreparedStatement ps = connection.prepareStatement(getprepareStatementSQL());
-		Iterator<logEntry> i = buffer.iterator();
-		while (i.hasNext())
-		{
-			logEntry obj = i.next();
-			if (obj instanceof playerTrackerLog)
-			{
-				playerTrackerLog log = (playerTrackerLog) obj;
-				ps.setString(1, log.username);
-				ps.setString(2, log.cat.toString());
-				ps.setString(3, log.extra);
-				ps.setTimestamp(4, log.time);
-				ps.setString(5, log.ip);
-				ps.execute();
-				ps.clearParameters();
-			}
-		}
-		ps.close();
 	}
 
 	public enum playerTrackerLogCategory

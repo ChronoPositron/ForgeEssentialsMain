@@ -1,26 +1,25 @@
 package com.ForgeEssentials.commands;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.potion.PotionEffect;
 
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.RegGroup;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
-public class CommandPotion extends ForgeEssentialsCommandBase
+public class CommandPotion extends FEcmdModuleCommands
 {
 	public static HashMap<String, Integer>	names;
 	static
@@ -81,31 +80,24 @@ public class CommandPotion extends ForgeEssentialsCommandBase
 		}
 		else
 		{
-			OutputHandler.chatError(sender, Localization.get(Localization.POTIONEFFECTNOTFOUND));
+			OutputHandler.chatError(sender, Localization.get("command.potion.effectnotfound"));
 			return;
 		}
 
 		dur = parseIntWithMin(sender, args[2], 0) * 20;
 
 		PotionEffect eff = new PotionEffect(ID, dur, ampl);
-		List<EntityPlayerMP> players = new ArrayList();
 		if (args[0].equalsIgnoreCase("me"))
 		{
-			players.add((EntityPlayerMP) sender);
+			sender.addPotionEffect(eff);
 		}
 		else if (PermissionsAPI.checkPermAllowed(new PermQueryPlayer(sender, getCommandPerm() + ".others")))
 		{
-			players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer player : players)
-				{
-					player.addPotionEffect(eff);
-				}
+				player.addPotionEffect(eff);
 			}
 			else
 			{
@@ -134,17 +126,11 @@ public class CommandPotion extends ForgeEssentialsCommandBase
 		dur = parseIntWithMin(sender, args[2], 0) * 20;
 		PotionEffect eff = new PotionEffect(ID, dur, ampl);
 
-		List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-		if (PlayerSelector.hasArguments(args[0]))
+		EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+
+		if (player != null)
 		{
-			players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-		}
-		if (players.size() != 0)
-		{
-			for (EntityPlayer target : players)
-			{
-				target.addPotionEffect(eff);
-			}
+			player.addPotionEffect(eff);
 		}
 		else
 		{
@@ -165,7 +151,7 @@ public class CommandPotion extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
@@ -173,6 +159,18 @@ public class CommandPotion extends ForgeEssentialsCommandBase
 			return getListOfStringsFromIterableMatchingLastWord(args, names.keySet());
 		else
 			return null;
+	}
+
+	@Override
+	public void registerExtraPermissions(IPermRegisterEvent event)
+	{
+		event.registerPermissionLevel(getCommandPerm() + ".others", RegGroup.OWNERS);
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 
 }

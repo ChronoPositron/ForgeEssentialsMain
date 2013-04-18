@@ -7,6 +7,8 @@ package com.ForgeEssentials.api.permissions;
  * sending the instance back in to update.
  * @author AbrarSyed
  */
+
+@SuppressWarnings("rawtypes")
 public class Group implements Comparable
 {
 
@@ -45,9 +47,45 @@ public class Group implements Comparable
 		int end = my.compareTo(their);
 
 		if (end == 0)
-			return priority - g.priority;
+			end = g.priority - priority;
+		
+		if (end == 0)
+			end = name.compareTo(g.name);
 
 		return end;
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (!(obj instanceof Group))
+			return false;
+		Group g = (Group) obj;
+		
+		boolean p = parent == null;
+		if (p)
+			p = g.parent == null;
+		else
+			p = parent.equals(parent);
+		
+		boolean pre = prefix != null;
+		if (pre)
+			pre = g.prefix == null;
+		else
+			pre = prefix.equals(prefix);
+		
+		boolean suff = suffix != null;
+		if (suff)
+			suff = g.suffix == null;
+		else
+			suff = suffix.equals(suffix);
+		
+		return name.equalsIgnoreCase(g.name) &&
+				p &&
+				pre &&
+				suff &&
+				zoneName.equalsIgnoreCase(zoneName) &&
+				priority == g.priority;
 	}
 
 	@Override

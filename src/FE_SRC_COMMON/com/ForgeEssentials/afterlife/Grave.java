@@ -11,6 +11,8 @@ import com.ForgeEssentials.api.data.SaveableObject;
 import com.ForgeEssentials.api.data.SaveableObject.Reconstructor;
 import com.ForgeEssentials.api.data.SaveableObject.SaveableField;
 import com.ForgeEssentials.api.data.SaveableObject.UniqueLoadingKey;
+import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
 import com.ForgeEssentials.util.AreaSelector.WorldPoint;
 
 @SaveableObject
@@ -35,16 +37,16 @@ public class Grave
 	public int			protTime;
 
 	@SaveableField
-	public boolean		protEnable = true;
+	public boolean		protEnable	= true;
 
 	public Grave(WorldPoint point, EntityPlayer player, ArrayList<EntityItem> drops, Deathchest deathchest)
 	{
-		this.key = point.toString();
+		key = point.toString();
 		this.point = point;
-		this.owner = player.username;
+		owner = player.username;
 		if (Deathchest.enableXP)
 		{
-			this.xp = player.experienceTotal;
+			xp = player.experienceTotal;
 
 			player.experienceLevel = 0;
 			player.experienceTotal = 0;
@@ -56,8 +58,8 @@ public class Grave
 			inv[i] = drops.get(i).getEntityItem().copy();
 		}
 
-		this.protTime = Deathchest.protectionTime;
-		
+		protTime = Deathchest.protectionTime;
+
 		deathchest.gravemap.put(point.toString(), this);
 	}
 
@@ -90,18 +92,30 @@ public class Grave
 	{
 		if (inv == null)
 			return 0;
-		return (inv.length % 9 == 0) ? inv.length : (((int) inv.length / 9) + 1) * 9;
+		return inv.length % 9 == 0 ? inv.length : (inv.length / 9 + 1) * 9;
 	}
 
 	public void tick()
 	{
-		if(protTime != 0)
+		if (protTime != 0)
 		{
-			protTime --;
+			protTime--;
 		}
 		else
 		{
 			protEnable = false;
 		}
+	}
+
+	public boolean canOpen(EntityPlayer player)
+	{
+		if (!protEnable)
+			return true;
+		if (player.username.equals(owner))
+			return true;
+		if (PermissionsAPI.checkPermAllowed(new PermQueryPlayer(player, Deathchest.PERMISSION_BYPASS)))
+			return true;
+
+		return false;
 	}
 }

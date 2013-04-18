@@ -27,7 +27,7 @@ public class WandController
 
 		// get info now rather than later
 		EntityPlayer player = event.entityPlayer;
-		PlayerInfo info = PlayerInfo.getPlayerInfo(player);
+		PlayerInfo info = PlayerInfo.getPlayerInfo(player.username);
 
 		int id = player.getCurrentEquippedItem() == null ? 0 : player.getCurrentEquippedItem().itemID;
 		int damage = 0;
@@ -41,7 +41,7 @@ public class WandController
 
 		Point point = new Point(event.x, event.y, event.z);
 
-		if (!PermissionsAPI.checkPermAllowed(new PermQueryPlayerArea(player, "WorldControl.commands.pos", point)))
+		if (!PermissionsAPI.checkPermAllowed(new PermQueryPlayerArea(player, "ForgeEssentials.CoreCommands.select.pos", point)))
 		{
 			OutputHandler.chatError(player, Localization.get(Localization.ERROR_PERMDENIED));
 			return;

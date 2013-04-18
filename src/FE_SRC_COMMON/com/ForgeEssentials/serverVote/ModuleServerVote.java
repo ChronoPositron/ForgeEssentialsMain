@@ -13,11 +13,9 @@ import com.ForgeEssentials.api.modules.FEModule.ServerInit;
 import com.ForgeEssentials.api.modules.FEModule.ServerStop;
 import com.ForgeEssentials.api.modules.event.FEModuleServerInitEvent;
 import com.ForgeEssentials.api.modules.event.FEModuleServerStopEvent;
-import com.ForgeEssentials.api.snooper.API;
 import com.ForgeEssentials.api.snooper.VoteEvent;
 import com.ForgeEssentials.core.ForgeEssentials;
 import com.ForgeEssentials.serverVote.Votifier.VoteReceiver;
-import com.ForgeEssentials.serverVote.snooper.VoteResponce;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.OutputHandler;
 
@@ -35,7 +33,6 @@ public class ModuleServerVote
 	public ModuleServerVote()
 	{
 		MinecraftForge.EVENT_BUS.register(this);
-		API.registerResponce(10, new VoteResponce());
 	}
 
 	@ServerInit
@@ -72,13 +69,11 @@ public class ModuleServerVote
 	@ForgeSubscribe(priority = EventPriority.HIGHEST)
 	public void defVoteResponces(VoteEvent vote)
 	{
-		OutputHandler.finer("Got Vote!");
-
 		/*
 		 * Offline check.
 		 */
 
-		EntityPlayerMP player = FunctionHelper.getPlayerFromPartialName(vote.player);
+		EntityPlayerMP player = FunctionHelper.getPlayerForName(vote.player);
 		if (player == null)
 		{
 			if (!config.allowOfflineVotes)
@@ -113,10 +108,6 @@ public class ModuleServerVote
 				OutputHandler.finer(stack);
 				player.inventory.addItemStackToInventory(stack.copy());
 			}
-		}
-		else
-		{
-			OutputHandler.finer("noFreeStuff :(");
 		}
 	}
 }

@@ -48,6 +48,7 @@ public class FEPreLoader implements IFMLLoadingPlugin, IFMLCallHook
 		}
 	}
 
+	// leave this here, somehow mc crashes without it.
 	@Override
 	public Void call() throws Exception
 	{

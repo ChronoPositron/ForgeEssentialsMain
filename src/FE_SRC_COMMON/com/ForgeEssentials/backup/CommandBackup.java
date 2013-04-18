@@ -12,7 +12,6 @@ import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
 
 public class CommandBackup extends ForgeEssentialsCommandBase
 {
-
 	static String		source;
 	static String		output;
 	static List<String>	fileList;
@@ -26,41 +25,49 @@ public class CommandBackup extends ForgeEssentialsCommandBase
 	@Override
 	public void processCommandPlayer(EntityPlayer sender, String[] args)
 	{
+		Backup b;
 		if (args.length != 1)
 		{
-			new Backup(true);
+			b = new Backup(true);
 		}
 		else
 		{
 			if (isInteger(args[0]))
 			{
-				new Backup(parseInt(sender, args[0]), true);
+				b = new Backup(parseInt(sender, args[0]), true);
 			}
 			else
 			{
-				new Backup(new File(args[0]));
+				b = new Backup(new File(args[0]));
 			}
 		}
+		
+		if (b != null)
+			b.startThread();
 	}
 
 	@Override
 	public void processCommandConsole(ICommandSender sender, String[] args)
 	{
+		Backup b = null;
 		if (args.length != 1)
 		{
-			new Backup(true);
+			b = new Backup(true);
 		}
 		else
 		{
 			if (isInteger(args[0]))
 			{
-				new Backup(parseInt(sender, args[0]), true);
+				b = new Backup(parseInt(sender, args[0]), true);
 			}
 			else
 			{
-				new Backup(new File(args[0]));
+				b = new Backup(new File(args[0]));
 			}
 		}
+		
+		if (b != null)
+			b.startThread();
 	}
 
 	@Override
@@ -92,5 +99,11 @@ public class CommandBackup extends ForgeEssentialsCommandBase
 			return false;
 		}
 		return true;
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		return null;
 	}
 }

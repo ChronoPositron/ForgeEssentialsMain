@@ -10,12 +10,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 
-public class CommandSpawnMob extends ForgeEssentialsCommandBase
+public class CommandSpawnMob extends FEcmdModuleCommands
 {
 
 	private HashMap<String, String>	mobNames	= new HashMap<String, String>();
@@ -83,44 +84,13 @@ public class CommandSpawnMob extends ForgeEssentialsCommandBase
 			double z = mop.blockZ + 0.5D;
 			if (args.length >= 2)
 			{
-				try
-				{
-					amount = new Integer(args[1]);
-				}
-				catch (NumberFormatException e)
-				{
-					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[1]));
-					return;
-				}
+				amount = parseIntWithMin(sender, args[1], 1);
+
 				if (args.length >= 5)
 				{
-					try
-					{
-						x = new Integer(args[2]);
-					}
-					catch (NumberFormatException e)
-					{
-						OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[2]));
-						return;
-					}
-					try
-					{
-						y = new Integer(args[3]);
-					}
-					catch (NumberFormatException e)
-					{
-						OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[3]));
-						return;
-					}
-					try
-					{
-						z = new Integer(args[4]);
-					}
-					catch (NumberFormatException e)
-					{
-						OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[4]));
-						return;
-					}
+					x = 0.5 + parseInt(sender, args[2], sender.posX);
+					y = 0.5 + parseInt(sender, args[3], sender.posY);
+					z = 0.5 + parseInt(sender, args[4], sender.posZ);
 				}
 			}
 			for (int i = 0; i < amount; i++)
@@ -128,7 +98,7 @@ public class CommandSpawnMob extends ForgeEssentialsCommandBase
 				EntityCreature mob = (EntityCreature) EntityList.createEntityByName(mobNames.get(args[0].toLowerCase()), sender.worldObj);
 				if (mob == null)
 				{
-					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOMOB, args[0]));
+					OutputHandler.chatError(sender, Localization.format("command.spawnmob.noMobX", args[0]));
 					return;
 				}
 				mob.setPosition(x, y, z);
@@ -151,50 +121,11 @@ public class CommandSpawnMob extends ForgeEssentialsCommandBase
 			int y;
 			int z;
 			int dimension = 0;
-			try
-			{
-				amount = new Integer(args[1]);
-			}
-			catch (NumberFormatException e)
-			{
-				sender.sendChatToPlayer(Localization.format(Localization.ERROR_NAN, args[1]));
-				return;
-			}
-			try
-			{
-				x = new Integer(args[2]);
-			}
-			catch (NumberFormatException e)
-			{
-				sender.sendChatToPlayer(Localization.format(Localization.ERROR_NAN, args[2]));
-				return;
-			}
-			try
-			{
-				y = new Integer(args[3]);
-			}
-			catch (NumberFormatException e)
-			{
-				sender.sendChatToPlayer(Localization.format(Localization.ERROR_NAN, args[3]));
-				return;
-			}
-			try
-			{
-				z = new Integer(args[4]);
-			}
-			catch (NumberFormatException e)
-			{
-				sender.sendChatToPlayer(Localization.format(Localization.ERROR_NAN, args[4]));
-				return;
-			}
-			try
-			{
-				dimension = new Integer(args[5]);
-			}
-			catch (NumberFormatException e)
-			{
-				sender.sendChatToPlayer(Localization.format(Localization.ERROR_NAN, args[5]));
-			}
+			amount = parseInt(sender, args[1]);
+			x = parseInt(sender, args[2]);
+			y = parseInt(sender, args[3]);
+			z = parseInt(sender, args[4]);
+			dimension = parseInt(sender, args[5]);
 			for (int i = 0; i < amount; i++)
 			{
 				World world = FunctionHelper.getDimension(dimension);
@@ -211,6 +142,7 @@ public class CommandSpawnMob extends ForgeEssentialsCommandBase
 		else
 		{
 			sender.sendChatToPlayer(Localization.get(Localization.ERROR_BADSYNTAX));
+			OutputHandler.debug("test");
 		}
 	}
 
@@ -227,12 +159,18 @@ public class CommandSpawnMob extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsFromIterableMatchingLastWord(args, mobNames.keySet());
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 
 }

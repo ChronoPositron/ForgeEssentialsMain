@@ -1,14 +1,18 @@
 package com.ForgeEssentials.commands;
 
+import java.util.List;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.MovingObjectPosition;
 
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.util.FunctionHelper;
+import com.ForgeEssentials.util.OutputHandler;
 
-public class CommandJump extends ForgeEssentialsCommandBase
+public class CommandJump extends FEcmdModuleCommands
 {
 
 	@Override
@@ -28,7 +32,15 @@ public class CommandJump extends ForgeEssentialsCommandBase
 	public void processCommandPlayer(EntityPlayer sender, String[] args)
 	{
 		MovingObjectPosition mo = FunctionHelper.getPlayerLookingSpot(sender, false);
-		((EntityPlayerMP) sender).playerNetServerHandler.setPlayerLocation(mo.blockX, mo.blockY, mo.blockZ, sender.rotationPitch, sender.rotationYaw);
+		if (mo == null)
+		{
+			OutputHandler.chatError(sender, "command.jump.toofar");
+			return;
+		}
+		else
+		{
+			((EntityPlayerMP) sender).playerNetServerHandler.setPlayerLocation(mo.blockX + .5, mo.blockY + 1, mo.blockZ + .5, sender.rotationPitch, sender.rotationYaw);
+		}
 	}
 
 	@Override
@@ -47,5 +59,17 @@ public class CommandJump extends ForgeEssentialsCommandBase
 	public String getCommandPerm()
 	{
 		return "ForgeEssentials.BasicCommands." + getCommandName();
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.ZONE_ADMINS;
 	}
 }

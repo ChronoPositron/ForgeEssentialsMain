@@ -27,7 +27,7 @@ public class DBConnector
 	/**
 	 * @param name a name for the DB connector. to be used in Logging.
 	 * @param fallback The DBConnector from which to take information for a given
-	 *            type if loading that type from this config fails.
+	 * type if loading that type from this config fails.
 	 * @param dType the default database type to use
 	 * @param dbDefault the default name for remote databases
 	 * @param dbFileDefault the default path for file databases. Relative to FEDIR
@@ -41,7 +41,7 @@ public class DBConnector
 		this.dbDefault = dbDefault;
 		this.dbFileDefault = dbFileDefault;
 		data = new HashMap<EnumDBType, HashMap<String, Property>>();
-		this.useParent = useFallback;
+		useParent = useFallback;
 	}
 
 	/**
@@ -52,11 +52,11 @@ public class DBConnector
 	 */
 	public void write(Configuration config, String cat)
 	{
-		config.get(cat, "chosenType", dType.toString(), " valid types: " + EnumDBType.getAll(" ")).value = type.toString();
+		config.get(cat, "chosenType", dType.toString(), " valid types: " + FunctionHelper.niceJoin(EnumDBType.values())).set(type.toString());
 
 		if (fallback != null)
 		{
-			config.get(cat, "checkParent", useParent, "If this is true, settings will be taken from tha parent, most probably the Main or Core config. This is only taken into effect with remote databases.").value = "" + useParent;
+			config.get(cat, "checkParent", useParent, "If this is true, settings will be taken from tha parent, most probably the Main or Core config. This is only taken into effect with remote databases.").set(useParent);
 		}
 
 		String newcat;
@@ -73,15 +73,15 @@ public class DBConnector
 
 			if (type.isRemote)
 			{
-				config.get(newcat, "host", "localhost").value = props.get("host").value;
-				config.get(newcat, "port", 3360).value = props.get("port").value;
-				config.get(newcat, "database", dbDefault).value = props.get("database").value;
-				config.get(newcat, "user", "FEUSER").value = props.get("user").value;
-				config.get(newcat, "pass", "password").value = props.get("pass").value;
+				config.get(newcat, "host", "localhost").set(props.get("host").getString());
+				config.get(newcat, "port", 3360).set(props.get("port").getString());
+				config.get(newcat, "database", dbDefault).set(props.get("database").getString());
+				config.get(newcat, "user", "FEUSER").set(props.get("user").getString());
+				config.get(newcat, "pass", "password").set(props.get("pass").getString());
 			}
 			else
 			{
-				config.get(newcat, "database", dbFileDefault, "this may be a file path as well.").value = props.get("database").value;
+				config.get(newcat, "database", dbFileDefault, "this may be a file path as well.").set(props.get("database").getString());
 			}
 
 		}
@@ -97,7 +97,7 @@ public class DBConnector
 	{
 		try
 		{
-			tempType = type = EnumDBType.valueOf(config.get(cat, "chosenType", dType.toString()).value);
+			tempType = type = EnumDBType.valueOf(config.get(cat, "chosenType", dType.toString()).getString());
 			if (fallback != null)
 			{
 				useParent = config.get(cat, "checkParent", false).getBoolean(false);
@@ -136,7 +136,7 @@ public class DBConnector
 
 		}
 
-		config.get(cat, "chosenType", type.toString(), " valid types: " + EnumDBType.getAll(" "));
+		config.get(cat, "chosenType", type.toString(), " valid types: " + FunctionHelper.niceJoin(EnumDBType.values()));
 		config.get(cat, "checkParent", useParent, "If this is true, settings will be taken from tha parent, most probably the Main or Core config. This is only taken into effect with remote databases.");
 	}
 
@@ -157,15 +157,17 @@ public class DBConnector
 					if (con != null)
 						return con;
 					else
-						OutputHandler.warning("[FE+SQL] "+name+" Parent check failed, going to in-house.");
+					{
+						OutputHandler.warning("[FE+SQL] " + name + " Parent check failed, going to in-house.");
+					}
 				}
 
 				// continue with stuff
-				String host = props.get("host").value;
+				String host = props.get("host").getString();
 				int port = props.get("port").getInt();
-				String database = props.get("database").value;
-				String user = props.get("user").value;
-				String pass = props.get("pass").value;
+				String database = props.get("database").getString();
+				String user = props.get("user").getString();
+				String pass = props.get("pass").getString();
 
 				type.loadClass();
 				String connect = type.getConnectionString(host, port, database);
@@ -175,7 +177,7 @@ public class DBConnector
 			else
 			{
 				// nonremote connections
-				String database = props.get("database").value;
+				String database = props.get("database").getString();
 				String connect = type.getConnectionString(database);
 				con = DriverManager.getConnection(connect);
 				return con;
@@ -183,7 +185,7 @@ public class DBConnector
 		}
 		catch (Exception e)
 		{
-			OutputHandler.exception(Level.WARNING, "[FE+SQL] "+name+" In-House check failed, going to default.", e);
+			OutputHandler.exception(Level.WARNING, "[FE+SQL] " + name + " In-House check failed, going to default.", e);
 		}
 
 		try
@@ -194,11 +196,11 @@ public class DBConnector
 			if (dType.isRemote)
 			{
 				// continue with stuff
-				String host = props.get("host").value;
+				String host = props.get("host").getString();
 				int port = props.get("port").getInt();
-				String database = props.get("database").value;
-				String user = props.get("user").value;
-				String pass = props.get("pass").value;
+				String database = props.get("database").getString();
+				String user = props.get("user").getString();
+				String pass = props.get("pass").getString();
 
 				dType.loadClass();
 				String connect = dType.getConnectionString(host, port, database);
@@ -207,14 +209,14 @@ public class DBConnector
 			else
 			{
 				// nonremote connections
-				String database = props.get("database").value;
+				String database = props.get("database").getString();
 				String connect = dType.getConnectionString(database);
 				return DriverManager.getConnection(connect);
 			}
 		}
 		catch (SQLException e)
 		{
-			OutputHandler.severe("[FE+SQL] "+name+" CATASTROPHIC DATABASE CONNECTION FAILIURE!!!");
+			OutputHandler.severe("[FE+SQL] " + name + " CATASTROPHIC DATABASE CONNECTION FAILIURE!!!");
 			Throwables.propagate(e);
 		}
 
@@ -230,16 +232,16 @@ public class DBConnector
 	{
 		if (!type.isRemote)
 			throw new IllegalArgumentException("Non remote type " + type + " is asking for parent config!");
-		
+
 		try
 		{
-			
+
 			HashMap<String, Property> props = data.get(type);
-			String host = props.get("host").value;
+			String host = props.get("host").getString();
 			int port = props.get("port").getInt();
-			String database = props.get("database").value;
-			String user = props.get("user").value;
-			String pass = props.get("pass").value;
+			String database = props.get("database").getString();
+			String user = props.get("user").getString();
+			String pass = props.get("pass").getString();
 
 			type.loadClass();
 			String connect = type.getConnectionString(host, port, database);
@@ -247,7 +249,7 @@ public class DBConnector
 		}
 		catch (Exception e)
 		{
-			OutputHandler.severe("[FE+SQL] "+name+" Failed parent check: "+e);
+			OutputHandler.severe("[FE+SQL] " + name + " Failed parent check: " + e);
 			return null;
 		}
 	}

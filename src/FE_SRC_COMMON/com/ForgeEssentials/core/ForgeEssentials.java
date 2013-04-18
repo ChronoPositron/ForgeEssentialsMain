@@ -4,27 +4,34 @@ import java.io.File;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.MinecraftForge;
 
+import com.ForgeEssentials.api.ForgeEssentialsRegistrar.PermRegister;
 import com.ForgeEssentials.api.data.ClassContainer;
 import com.ForgeEssentials.api.data.DataStorageManager;
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
+import com.ForgeEssentials.api.permissions.RegGroup;
 import com.ForgeEssentials.core.commands.CoreCommands;
 import com.ForgeEssentials.core.commands.selections.WandController;
 import com.ForgeEssentials.core.compat.CompatMCStats;
 import com.ForgeEssentials.core.compat.DuplicateCommandRemoval;
 import com.ForgeEssentials.core.compat.SanityChecker;
 import com.ForgeEssentials.core.misc.BannedItems;
-import com.ForgeEssentials.core.misc.ItemList;
+import com.ForgeEssentials.core.misc.FriendlyItemList;
 import com.ForgeEssentials.core.misc.LoginMessage;
 import com.ForgeEssentials.core.misc.ModListFile;
+import com.ForgeEssentials.core.misc.UnfreindlyItemList;
 import com.ForgeEssentials.core.moduleLauncher.ModuleLauncher;
 import com.ForgeEssentials.core.network.PacketHandler;
+import com.ForgeEssentials.core.preloader.FEModContainer;
 import com.ForgeEssentials.data.ForgeConfigDataDriver;
 import com.ForgeEssentials.data.NBTDataDriver;
 import com.ForgeEssentials.data.SQLDataDriver;
 import com.ForgeEssentials.data.StorageManager;
 import com.ForgeEssentials.data.typeInfo.TypeInfoItemStack;
 import com.ForgeEssentials.data.typeInfo.TypeInfoNBTCompound;
+import com.ForgeEssentials.util.FEChunkLoader;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.MiscEventHandler;
@@ -66,7 +73,7 @@ import cpw.mods.fml.relauncher.Side;
 		clientSideRequired = false,
 		serverSideRequired = false,
 		serverPacketHandlerSpec = @SidedPacketHandler(channels = { "ForgeEssentials" }, packetHandler = PacketHandler.class))
-@Mod(modid = "ForgeEssentials", name = "Forge Essentials", version = "@VERSION@")
+@Mod(modid = "ForgeEssentials", name = "Forge Essentials", version = FEModContainer.version)
 public class ForgeEssentials
 {
 
@@ -86,10 +93,6 @@ public class ForgeEssentials
 	public static boolean			mcstats;
 
 	public BannedItems				bannedItems;
-	private ItemList				itemList;
-
-	private MiscEventHandler		miscEventHandler;
-
 	public static String			version;
 
 	private CompatMCStats			mcstatscompat;
@@ -100,12 +103,28 @@ public class ForgeEssentials
 	private CoreCommands			cmds;
 
 	private TaskRegistry			tasks;
+	
+	public static final String beta = "@BETA@";
 
+	public ForgeEssentials()
+	{
+        tasks = new TaskRegistry();
+	}
+	
 	@PreInit
 	public void preInit(FMLPreInitializationEvent e)
 	{
 		OutputHandler.init(e.getModLog());
-
+		
+		if (beta.equals("true")){
+			OutputHandler.fine("You are running ForgeEssentials beta build " + FEModContainer.version);
+			OutputHandler.fine("Please report all bugs to the github issue tracker at https://github.com/ForgeEssentials/ForgeEssentialsMain/issues.");
+			OutputHandler.fine("We thank you for helping us to beta test ForgeEssentials.");
+		}
+		
+		// FE MUST BE FIRST!!
+		GameRegistry.registerPlayerTracker(new PlayerTracker());
+		
 		version = e.getModMetadata().version;
 
 		// setup fedir stuff
@@ -146,8 +165,7 @@ public class ForgeEssentials
 			DataStorageManager.registerSaveableType(TypeInfoNBTCompound.class, new ClassContainer(NBTTagCompound.class));
 		}
 
-		// setup modules AFTER data stuff...
-		miscEventHandler = new MiscEventHandler();
+		new MiscEventHandler();
 		bannedItems = new BannedItems();
 		MinecraftForge.EVENT_BUS.register(bannedItems);
 		LoginMessage.loadFile();
@@ -165,13 +183,8 @@ public class ForgeEssentials
 
 		mdlaunch.load(e);
 		localization.load();
-		
-		// tasks
-		tasks = new TaskRegistry();
 
-		// other stuff
-		GameRegistry.registerPlayerTracker(new PlayerTracker());
-
+		//other stuff
 		ForgeEssentialsEventFactory factory = new ForgeEssentialsEventFactory();
 		TickRegistry.registerTickHandler(factory, Side.SERVER);
 		GameRegistry.registerPlayerTracker(factory);
@@ -185,10 +198,23 @@ public class ForgeEssentials
 	@PostInit
 	public void postLoad(FMLPostInitializationEvent e)
 	{
+		UnfreindlyItemList.modStep();
+		UnfreindlyItemList.output(new File(FEDIR, "UnfreindlyItemList.txt"));
+
 		mdlaunch.postLoad(e);
 		bannedItems.postLoad(e);
 
-		itemList = new ItemList();
+		new FriendlyItemList();
+	}
+	
+	@PermRegister
+	private static void registerPerms(IPermRegisterEvent event)
+	{
+		event.registerPermissionLevel("ForgeEssentials.CoreCommands.select.pos", RegGroup.OWNERS);
+		event.registerPermissionLevel("ForgeEssentials.CoreCommands.select.wand", RegGroup.OWNERS);
+		event.registerPermissionLevel("ForgeEssentials.CoreCommands.select.deselect", RegGroup.OWNERS);
+		event.registerPermissionLevel("ForgeEssentials.CoreCommands.fedebug", RegGroup.OWNERS);
+		event.registerPermissionLevel("ForgeEssentials.CoreCommands.fereload", RegGroup.OWNERS);
 	}
 
 	@ServerStarting
@@ -196,7 +222,7 @@ public class ForgeEssentials
 	{
 		// load up DataAPI
 		((StorageManager) DataStorageManager.manager).serverStart(e);
-		
+
 		ModListFile.makeModList();
 
 		// Central TP system
@@ -205,8 +231,12 @@ public class ForgeEssentials
 		cmds = new CoreCommands();
 		cmds.load(e);
 
+		tasks.onServerStart();
+
 		// do modules last... just in case...
 		mdlaunch.serverStarting(e);
+
+		ForgeChunkManager.setForcedChunkLoadingCallback(this, new FEChunkLoader());
 	}
 
 	@ServerStarted
@@ -222,6 +252,7 @@ public class ForgeEssentials
 	public void serverStopping(FMLServerStoppingEvent e)
 	{
 		mdlaunch.serverStopping(e);
+		tasks.onServerStop();
 	}
 
 	@VersionCheckHandler

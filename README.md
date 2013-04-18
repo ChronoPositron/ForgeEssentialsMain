@@ -1,23 +1,51 @@
 ForgeEssentialsMain
 ===================
-The Forge Essentials project consists of a permissions and protection system to be used with forge servers, incorporating a certain extent of WorldEdit functionality. More info can be found <a href="https://github.com/ForgeEssentials/ForgeEssentialsMain/wiki/About-ForgeEssentials">here</a> or on our IRC channel (#forgeessentials on EsperNet).
+*******************
+####Join us on our IRC channel [#forgeessentials](http://webchat.esper.net/?channels=forgeessentials&prompt=1) on EsperNet.####
+_________________________________________________________________________________________________________________________
+The Forge Essentials project consists of a permissions and protection system to be used with forge servers, incorporating a certain extent of WorldEdit functionality
 
-More information can be found at the wiki.
+*More information can be found at the [wiki](wiki).*
+
+<br>
 
 Setup
 =====
-See README-Developing.txt for setting up FE with MCP.
+_____
+*Please see [README-Developing.txt](README-Developing.txt) for setting up ForgeEssentials with MCP.*
+
+<br>
 
 Downloads
 =========
-Eclipse formatting profile: <a href="https://dl.dropbox.com/u/31042110/eclipse%20Formatter%20Stuff/AbrarCodeFormatter.xml">Eclipse Formatter File</a>
+_________
+<table>
+<tr>
+<th>Link</th>
+<th>Description</th>
+</tr>
+<tr>
+<td><a href="https://dl.dropbox.com/u/31042110/eclipse%20Formatter%20Stuff/AbrarCodeFormatter.xml">Eclipse Formatter File</a></td>
+<td>Abrar's standard formatting file. All files submitted as a pull request must be formatted with this.</td>
+</tr>
+<tr>
+<td><a href="https://dl.dropbox.com/u/31042110/eclipse%20Formatter%20Stuff/AbrarCodeCleanup.xml">Eclipse Cleanup File</a></td>
+<td>Keep your code clean.</td>
+</tr>
+<tr>
+<td><a href="http://files.minecraftforge.net/ForgeEssentials/">Jenkins Build System</a></td>
+<td>All official ForgeEssential builds may be found here.</td>
+</tr>
+<tr>
+<td><a href="http://files.minecraftforge.net/minecraftforge/minecraftforge-universal-latest.zip">Forge</a></td>
+<td>Latest Forge Direct download (Jenkins compiles on this)</td>
+</table>
 
-Eclipse cleanup profile: <a href="https://dl.dropbox.com/u/31042110/eclipse%20Formatter%20Stuff/AbrarCodeCleanup.xml">Eclipse Cleanup File</a>
-
-Builds: <a href="http://files.minecraftforge.net/ForgeEssentials/">Jenkins Build System</a>
+<br>
 
 FE Team Members:
 ================
+________________
 <a href="https://github.com/AbrarSyed">AbrarSyed</a>  
 
 <a href="https://github.com/Bob-A-Red-Dino">Bob A Red Dino</a>  (inactive)
@@ -33,4 +61,12 @@ FE Team Members:
 <a href="https://github.com/Weneg">Weneg</a> (inactive)
 
 <a href="https://github.com/Malkerian">Malkerian</a>
+
+<a href="https://github.com/Jgdovin">Jgdovin</a>
+
+With localization credits to:
+
+<a href="https://github.com/helinus">Helinus</a>
+
+<a href="https://github.com/jovino">Jovino</a> (inactive)
 

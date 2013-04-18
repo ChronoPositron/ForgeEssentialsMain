@@ -3,102 +3,58 @@ package com.ForgeEssentials.auth;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.EnumSet;
+import java.util.TimerTask;
 
 import com.ForgeEssentials.util.OutputHandler;
 
-import cpw.mods.fml.common.IScheduledTickHandler;
-import cpw.mods.fml.common.TickType;
+import cpw.mods.fml.common.FMLCommonHandler;
 
-public class VanillaServiceChecker implements IScheduledTickHandler
+public class VanillaServiceChecker extends TimerTask
 {
-	public static boolean	online	= true;
-	public static boolean	oldOnline;
+	private boolean				online		= true;
+	private boolean				oldOnline;
+
+	private static final String	MC_SERVER	= "http://session.minecraft.net/game/checkserver.jsp";
+	private static final String	ONLINE		= "NOT YET";
 
 	public VanillaServiceChecker()
 	{
+		online = oldOnline = check();
+		OutputHandler.info("VanillaServiceChecker initialized. Vanilla online mode: '" + ModuleAuth.vanillaMode() + "' Mojang login servers: '" + online + "'");
+	}
+
+	@Override
+	public void run()
+	{
+		oldOnline = online;
+		online = check();
+
+		if (oldOnline != online)
+		{
+			FMLCommonHandler.instance().getSidedDelegate().getServer().setOnlineMode(online);
+			ModuleAuth.onStatusChange();
+		}
+	}
+
+	private static boolean check()
+	{
 		try
 		{
-			URL var2 = new URL("http://session.minecraft.net/game/checkserver.jsp");
-			BufferedReader var3 = new BufferedReader(new InputStreamReader(var2.openStream()));
-			String var4 = var3.readLine();
-			var3.close();
-			if (!var4.equals("NOT YET"))
-			{
-				online = false;
-			}
+			URL url = new URL(MC_SERVER);
+			BufferedReader stream = new BufferedReader(new InputStreamReader(url.openStream()));
+			String input = stream.readLine();
+			stream.close();
+
+			return ONLINE.equals(input);
 		}
 		catch (Exception e)
 		{
-			online = false;
-			// e.printStackTrace();
-		}
-		oldOnline = online;
-		OutputHandler.info("VanillaServiceChecker initialized. Vanilla online mode: '" + ModuleAuth.getVanillaOnlineMode() + "' Mojang login servers: '" + online + "'");
-		ModuleAuth.FEAuth(online);
-	}
-
-	@Override
-	public void tickStart(EnumSet<TickType> type, Object... tickData)
-	{
-		check();
-	}
-
-	@Override
-	public void tickEnd(EnumSet<TickType> type, Object... tickData)
-	{
-	}
-
-	@Override
-	public EnumSet<TickType> ticks()
-	{
-		return EnumSet.of(TickType.SERVER);
-	}
-
-	@Override
-	public String getLabel()
-	{
-		return "VanillaAuthServiceChecker";
-	}
-
-	@Override
-	public int nextTickSpacing()
-	{
-		// TODO: make configureable
-		return 20 * 5;
-	}
-
-	private static void check()
-	{
-		oldOnline = online;
-		online = true;
-		try
-		{
-			URL var2 = new URL("http://session.minecraft.net/game/checkserver.jsp");
-			BufferedReader var3 = new BufferedReader(new InputStreamReader(var2.openStream()));
-			String var4 = var3.readLine();
-			var3.close();
-			if (!var4.equals("NOT YET"))
-			{
-				online = false;
-			}
-		}
-		catch (Exception e)
-		{
-			online = false;
-			// e.printStackTrace();
-		}
-
-		if (online != oldOnline)
-		{
-			OutputHandler.warning("MC login changed status, now " + online + "!");
-			ModuleAuth.FEAuth(online);
+			return false;
 		}
 	}
 
-	public static boolean forceCheck()
+	public boolean isServiceUp()
 	{
-		check();
 		return online;
 	}
 

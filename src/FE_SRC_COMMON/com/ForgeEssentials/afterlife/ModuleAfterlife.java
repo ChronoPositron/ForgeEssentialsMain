@@ -6,7 +6,6 @@ import com.ForgeEssentials.api.ForgeEssentialsRegistrar.PermRegister;
 import com.ForgeEssentials.api.modules.FEModule;
 import com.ForgeEssentials.api.modules.event.FEModuleInitEvent;
 import com.ForgeEssentials.api.modules.event.FEModuleServerInitEvent;
-import com.ForgeEssentials.api.modules.event.FEModuleServerPostInitEvent;
 import com.ForgeEssentials.api.modules.event.FEModuleServerStopEvent;
 import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
 import com.ForgeEssentials.api.permissions.RegGroup;
@@ -46,12 +45,6 @@ public class ModuleAfterlife
 		deathchest.load();
 		GameRegistry.registerPlayerTracker(respawnDebuff);
 	}
-	
-	@FEModule.ServerPostInit
-	public void serverStarted(FEModuleServerPostInitEvent e)
-	{
-		conf.loadDM();
-	}
 
 	@FEModule.ServerStop
 	public void serverStopping(FEModuleServerStopEvent e)
@@ -63,10 +56,12 @@ public class ModuleAfterlife
 	public void registerPermissions(IPermRegisterEvent event)
 	{
 		event.registerPermissionLevel(BASEPERM, RegGroup.OWNERS);
-		
+
 		event.registerPermissionLevel(RespawnDebuff.BYPASSPOTION, RegGroup.OWNERS);
 		event.registerPermissionLevel(RespawnDebuff.BYPASSSTATS, RegGroup.OWNERS);
-		
-		event.registerPermissionLevel(Deathchest.PERMISSION, RegGroup.MEMBERS);
+
+		event.registerPermissionLevel(Deathchest.PERMISSION_BYPASS, null);
+		event.registerPermissionLevel(Deathchest.PERMISSION_MAKE, RegGroup.MEMBERS);
+		event.registerPermissionLevel(Deathchest.PERMISSION_MAKE, RegGroup.OWNERS);
 	}
 }

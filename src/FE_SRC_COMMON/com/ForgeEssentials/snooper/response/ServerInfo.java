@@ -2,21 +2,19 @@ package com.ForgeEssentials.snooper.response;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 import net.minecraftforge.common.Configuration;
 
-import com.ForgeEssentials.WorldBorder.ModuleWorldBorder;
+import com.ForgeEssentials.api.json.JSONArray;
+import com.ForgeEssentials.api.json.JSONException;
+import com.ForgeEssentials.api.json.JSONObject;
 import com.ForgeEssentials.api.snooper.Response;
-import com.ForgeEssentials.api.snooper.TextFormatter;
 import com.ForgeEssentials.util.FunctionHelper;
-import com.ForgeEssentials.util.AreaSelector.Point;
 
 import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Loader;
@@ -24,85 +22,72 @@ import cpw.mods.fml.common.ModContainer;
 
 public class ServerInfo extends Response
 {
-	LinkedHashMap<String, String>	data		= new LinkedHashMap();
-	private boolean					sendWB;
-	private boolean					sendMotd;
-	private boolean					sendIP;
-	private String					overrideIPValue;
-	private boolean					sendMods;
-	private int[]					TPSList;
-	private boolean					overrideIP;
-	public static Integer			ServerID	= 0;
-	public static String			serverHash	= "";
+	private JSONObject		data		= new JSONObject();
+	private boolean			sendWB;
+	private boolean			sendMotd;
+	private boolean			sendIP;
+	private String			overrideIPValue;
+	private boolean			sendMods;
+	private int[]			TPSList;
+	private boolean			overrideIP;
+	public static Integer	ServerID	= 0;
+	public static String	serverHash	= "";
 
 	@Override
-	public String getResponceString(DatagramPacket packet)
+	public JSONObject getResponce(JSONObject input) throws JSONException
 	{
 		if (sendMods)
 		{
-			ArrayList<String> temp = new ArrayList<String>();
+			JSONArray temp = new JSONArray();
 			List<ModContainer> modlist = Loader.instance().getActiveModList();
 			for (int i = 0; i < modlist.size(); i++)
 			{
 				ArrayList<String> ModData = new ArrayList<String>();
 				ModData.add(modlist.get(i).getName());
 				ModData.add(modlist.get(i).getDisplayVersion());
-				temp.add(TextFormatter.toJSON(ModData));
+				temp.put(ModData);
 			}
-			data.put("mods", TextFormatter.toJSON(temp));
+			data.put("Mods", temp);
 		}
 
 		if (sendIP)
 		{
 			if (overrideIP)
 			{
-				data.put("hostip", "" + overrideIPValue);
+				data.put("Hostname", "" + overrideIPValue + ":" + server.getPort());
 			}
 			else
 			{
-				data.put("hostip", getIP());
+				data.put("Hostname", getIP() + ":" + server.getPort());
 			}
-			data.put("hostport", "" + server.getPort());
 		}
-		data.put("version", server.getMinecraftVersion());
-		data.put("map", server.getFolderName());
-		data.put("maxplayers", "" + server.getMaxPlayers());
+		data.put("MCversion", server.getMinecraftVersion());
+		data.put("WorldName", server.getFolderName());
+		data.put("Slots", "" + server.getMaxPlayers());
 
 		if (ServerID != 0)
 		{
-			data.put("serverID", ServerID + "");
+			data.put("ServerID", ServerID + "");
 		}
 		if (!serverHash.equals(""))
 		{
-			data.put("serverHash", serverHash + "");
+			data.put("ServerHash", serverHash + "");
 		}
 
-		data.put("gm", server.getGameType().getName());
-		data.put("diff", "" + server.getDifficulty());
-		data.put("numplayers", "" + server.getCurrentPlayerCount());
+		data.put("Gamemode", server.getGameType().getName());
+		data.put("Difficulty", "" + server.getDifficulty());
+		data.put("OnlinePlayers", "" + server.getCurrentPlayerCount());
 		if (sendMotd)
 		{
-			data.put("motd", server.getServerMOTD());
+			data.put("MOTD", server.getServerMOTD());
 		}
 
-		data.put("uptime", getUptime());
-		data.put("tps", getTPS());
+		data.put("Uptime", getUptime());
+		data.put("TPS", getTPS());
 
-		try
-		{
-			if (sendWB && ModuleWorldBorder.WBenabled && ModuleWorldBorder.set)
-			{
-				LinkedHashMap<String, String> temp = new LinkedHashMap();
-				temp.put("Shape", ModuleWorldBorder.shape.name());
-				Point center = new Point(ModuleWorldBorder.X, 64, ModuleWorldBorder.Z);
-				temp.put("Center", TextFormatter.toJSON(center));
-				data.put("wb", TextFormatter.toJSON(temp));
-			}
-		}
-		catch (Exception e)
-		{}
+		data.put("Players", server.getAllUsernames());
 
-		return dataString = TextFormatter.toJSON(data);
+		return new JSONObject().put(getName(), data);
 	}
 
 	@Override
@@ -118,25 +103,25 @@ public class ServerInfo extends Response
 		sendMotd = config.get(category, "sendMotd", true).getBoolean(true);
 		sendIP = config.get(category, "sendIP", true).getBoolean(true);
 		overrideIP = config.get(category, "overrideIP", true).getBoolean(true);
-		overrideIPValue = config.get(category, "overrideIPValue", "").value;
+		overrideIPValue = config.get(category, "overrideIPValue", "").getString();
 		sendMods = config.get(category, "sendMods", true).getBoolean(true);
 		TPSList = config.get(category, "TPS_dim", new int[]
 		{ -1, 0, 1 }, "Dimensions to send TPS of").getIntList();
 		ServerID = config.get(category, "ServerID", 0, "This is here to make it easy for other sites (server lists) to help authenticate the server.").getInt();
-		serverHash = config.get(category, "serverHash", "", "This is here to make it easy for other sites (server lists) to help authenticate the server.").value;
+		serverHash = config.get(category, "serverHash", "", "This is here to make it easy for other sites (server lists) to help authenticate the server.").getString();
 	}
 
 	@Override
 	public void writeConfig(String category, Configuration config)
 	{
-		config.get(category, "sendWB", true).value = "" + sendWB;
-		config.get(category, "sendMotd", true).value = "" + sendMotd;
-		config.get(category, "sendIP", true).value = "" + sendIP;
-		config.get(category, "overrideIP", true).value = "" + overrideIP;
-		config.get(category, "overrideIPValue", "").value = overrideIPValue;
-		config.get(category, "sendMods", true).value = "" + sendMods;
-		config.get(category, "ServerID", 0, "This is here to make it easy for other sites (server lists) to help authenticate the server.").value = "" + ServerID;
-		config.get(category, "serverHash", "", "This is here to make it easy for other sites (server lists) to help authenticate the server.").value = serverHash;
+		config.get(category, "sendWB", true).set(sendWB);
+		config.get(category, "sendMotd", true).set(sendMotd);
+		config.get(category, "sendIP", true).set(sendIP);
+		config.get(category, "overrideIP", true).set(overrideIP);
+		config.get(category, "overrideIPValue", "").set(overrideIPValue);
+		config.get(category, "sendMods", true).set(sendMods);
+		config.get(category, "ServerID", 0, "This is here to make it easy for other sites (server lists) to help authenticate the server.").set(ServerID);
+		config.get(category, "serverHash", "", "This is here to make it easy for other sites (server lists) to help authenticate the server.").set(serverHash);
 
 		String[] list = new String[TPSList.length];
 		for (int i = 0; i < list.length; i++)
@@ -144,7 +129,7 @@ public class ServerInfo extends Response
 			list[i] = "" + TPSList[i];
 		}
 		config.get(category, "TPS_dim", new int[]
-		{ -1, 0, 1 }, "Dimensions to send TPS of").valueList = list;
+		{ -1, 0, 1 }, "Dimensions to send TPS of").set(list);
 	}
 
 	public String getUptime()
@@ -154,24 +139,23 @@ public class ServerInfo extends Response
 		return FunctionHelper.parseTime(secsIn);
 	}
 
-	public String getTPS()
+	public JSONObject getTPS()
 	{
 		try
 		{
-			LinkedHashMap<String, String> data = new LinkedHashMap();
+			JSONObject data = new JSONObject();
 			for (int id : TPSList)
 			{
 				if (server.worldTickTimes.containsKey(id))
 				{
-					data.put("dim " + id, "" + getTPSFromData(server.worldTickTimes.get(id)));
+					data.put("Dim " + id, "" + getTPSFromData(server.worldTickTimes.get(id)));
 				}
 			}
-			return TextFormatter.toJSON(data);
+			return data;
 		}
 		catch (Exception e)
 		{
-			return TextFormatter.toJSON(new String[]
-			{ "" });
+			return new JSONObject();
 		}
 	}
 

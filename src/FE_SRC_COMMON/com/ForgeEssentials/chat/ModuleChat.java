@@ -6,20 +6,15 @@ import java.util.Set;
 
 import net.minecraft.command.CommandHandler;
 import net.minecraft.command.ICommand;
+import net.minecraft.network.packet.Packet3Chat;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.ForgeEssentials.api.ForgeEssentialsRegistrar.PermRegister;
 import com.ForgeEssentials.api.modules.FEModule;
-import com.ForgeEssentials.api.modules.FEModule.Config;
-import com.ForgeEssentials.api.modules.FEModule.Init;
-import com.ForgeEssentials.api.modules.FEModule.ModuleDir;
-import com.ForgeEssentials.api.modules.FEModule.PostInit;
-import com.ForgeEssentials.api.modules.FEModule.ServerInit;
-import com.ForgeEssentials.api.modules.FEModule.ServerPostInit;
-import com.ForgeEssentials.api.modules.FEModule.ServerStop;
 import com.ForgeEssentials.api.modules.event.FEModuleInitEvent;
 import com.ForgeEssentials.api.modules.event.FEModulePostInitEvent;
+import com.ForgeEssentials.api.modules.event.FEModulePreInitEvent;
 import com.ForgeEssentials.api.modules.event.FEModuleServerInitEvent;
 import com.ForgeEssentials.api.modules.event.FEModuleServerPostInitEvent;
 import com.ForgeEssentials.api.modules.event.FEModuleServerStopEvent;
@@ -34,6 +29,7 @@ import com.ForgeEssentials.chat.commands.CommandPm;
 import com.ForgeEssentials.chat.commands.CommandR;
 import com.ForgeEssentials.chat.commands.CommandUnmute;
 import com.ForgeEssentials.core.ForgeEssentials;
+import com.ForgeEssentials.core.compat.DuplicateCommandRemoval;
 import com.ForgeEssentials.util.OutputHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -43,34 +39,38 @@ import cpw.mods.fml.relauncher.ReflectionHelper;
 @FEModule(name = "Chat", parentMod = ForgeEssentials.class, configClass = ConfigChat.class)
 public class ModuleChat
 {
-	@Config
+	@FEModule.Config
 	public static ConfigChat	conf;
 
-	@ModuleDir
+	@FEModule.ModuleDir
 	public static File			moduleDir;
 
 	private MailSystem			mailsystem;
-
-	private AutoMessage			autoMessage;
 
 	public ModuleChat()
 	{
 	}
 
-	@Init
-	public void load(FEModuleInitEvent e)
+	@FEModule.PreInit
+	public void load(FEModulePreInitEvent e)
 	{
-		ChatFormatter chat = new ChatFormatter();
-		MinecraftForge.EVENT_BUS.register(chat);
+		Packet3Chat.maxChatLength = 200;
 	}
 
-	@PostInit
+	@FEModule.Init
+	public void load(FEModuleInitEvent e)
+	{
+		MinecraftForge.EVENT_BUS.register(new ChatFormatter());
+		MinecraftForge.EVENT_BUS.register(new CommandMuter());
+	}
+
+	@FEModule.PostInit
 	public void postLoad(FEModulePostInitEvent e)
 	{
 		mailsystem = new MailSystem();
 	}
 
-	@ServerInit
+	@FEModule.ServerInit
 	public void serverStarting(FEModuleServerInitEvent e)
 	{
 		e.registerServerCommand(new CommandMsg());
@@ -83,34 +83,34 @@ public class ModuleChat
 		e.registerServerCommand(new CommandAutoMessage());
 	}
 
-	@ServerPostInit()
+	@FEModule.ServerPostInit()
 	public void serverStarted(FEModuleServerPostInitEvent e)
 	{
 		removeTell(FMLCommonHandler.instance().getMinecraftServerInstance());
-		autoMessage = new AutoMessage(FMLCommonHandler.instance().getMinecraftServerInstance());
+		new AutoMessage(FMLCommonHandler.instance().getMinecraftServerInstance());
 		MailSystem.LoadAll();
 		GameRegistry.registerPlayerTracker(mailsystem);
 	}
 
-	@ServerStop()
+	@FEModule.ServerStop()
 	public void serverStopping(FEModuleServerStopEvent e)
 	{
 		MailSystem.SaveAll();
-		autoMessage.interrupt();
 	}
 
 	@PermRegister
 	public static void registerPermissions(IPermRegisterEvent event)
 	{
-		event.registerPermissionLevel("ForgeEssentials.Chat.r", RegGroup.GUESTS);
-		event.registerPermissionLevel("ForgeEssentials.Chat.msg", RegGroup.GUESTS);
-		event.registerPermissionLevel("ForgeEssentials.Chat.mail", RegGroup.GUESTS);
+		event.registerPermissionLevel("ForgeEssentials.Chat.commands.r", RegGroup.GUESTS);
+		event.registerPermissionLevel("ForgeEssentials.Chat.commands.msg", RegGroup.GUESTS);
+		event.registerPermissionLevel("ForgeEssentials.Chat.commands.mail", RegGroup.GUESTS);
 
 		event.registerPermissionLevel("ForgeEssentials.Chat.commands.nickname", RegGroup.MEMBERS);
 
 		event.registerPermissionLevel("ForgeEssentials.Chat.commands.nickname.others", RegGroup.OWNERS);
 		event.registerPermissionLevel("ForgeEssentials.Chat.commands.mute", RegGroup.OWNERS);
 		event.registerPermissionLevel("ForgeEssentials.Chat.commands.unmute", RegGroup.OWNERS);
+		event.registerPermissionLevel("ForgeEssentials.Chat.commands.automessage", RegGroup.OWNERS);
 	}
 
 	private void removeTell(MinecraftServer server)
@@ -119,7 +119,7 @@ public class ModuleChat
 		{
 			try
 			{
-				Set cmdList = ReflectionHelper.getPrivateValue(CommandHandler.class, (CommandHandler) server.getCommandManager(), "commandSet", "b");
+				Set<?> cmdList = ReflectionHelper.getPrivateValue(CommandHandler.class, (CommandHandler) server.getCommandManager(), DuplicateCommandRemoval.FIELDNAME);
 
 				ICommand toRemove = null;
 				Class<?> cmdClass = null;
@@ -153,7 +153,7 @@ public class ModuleChat
 				}
 				ReflectionHelper.setPrivateValue(CommandHandler.class, (CommandHandler) server.getCommandManager(), cmdList, "commandSet", "b");
 
-				Map cmds = ReflectionHelper.getPrivateValue(CommandHandler.class, (CommandHandler) server.getCommandManager(), "commandMap", "a");
+				Map<String, CommandMsg> cmds = ReflectionHelper.getPrivateValue(CommandHandler.class, (CommandHandler) server.getCommandManager(), "commandMap", "a");
 				if (cmds.containsKey("tell"))
 				{
 					OutputHandler.finer("Removing command tell from vanilla set.");

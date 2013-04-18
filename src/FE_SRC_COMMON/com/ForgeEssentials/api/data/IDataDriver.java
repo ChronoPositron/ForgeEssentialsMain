@@ -5,7 +5,7 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
 public interface IDataDriver
 {
-	void onClassRegistered(ITypeInfo tagger);
+	void onClassRegistered(ITypeInfo<?> tagger);
 
 	String getName();
 
@@ -18,7 +18,7 @@ public interface IDataDriver
 	boolean deleteObject(ClassContainer type, String loadingKey);
 
 	void parseConfigs(Configuration config, String category) throws Exception;
-	
+
 	void serverStart(FMLServerStartingEvent e);
 
 	EnumDriverType getType();

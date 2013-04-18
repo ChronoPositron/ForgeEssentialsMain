@@ -13,15 +13,8 @@ import com.ForgeEssentials.util.tasks.ITickTask;
 
 public class TickTaskSetBackup implements ITickTask
 {
-	/**
-	 * 
-	 */
-	private static final long			serialVersionUID	= 9090893570755746522L;
 	// stuff needed
 	private final EntityPlayer			player;
-	private final boolean				redo;										// true = redo. // false =
-																					// undo
-
 	// actually used
 	private final int					last;
 	private int							current;
@@ -31,15 +24,13 @@ public class TickTaskSetBackup implements ITickTask
 	/**
 	 * @param player
 	 * @param back
-	 *            BackupArea
+	 * BackupArea
 	 * @param before
-	 *            true = redo -- false = undo
+	 * true = redo -- false = undo
 	 */
 	public TickTaskSetBackup(EntityPlayer player, BackupArea back, boolean redo)
 	{
 		this.player = player;
-		this.redo = redo;
-
 		if (redo)
 		{
 			list = back.after;

@@ -18,6 +18,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagDouble;
 import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagLong;
 import net.minecraft.nbt.NBTTagString;
 
 import com.ForgeEssentials.api.data.ClassContainer;
@@ -27,10 +28,9 @@ import com.ForgeEssentials.api.data.ITypeInfo;
 import com.ForgeEssentials.api.data.TypeData;
 import com.ForgeEssentials.util.OutputHandler;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class NBTDataDriver extends BinaryDataDriver
 {
-	private static final String	UNIQUE	= "__UNIQUE__";
-
 	@Override
 	protected boolean saveData(ClassContainer type, TypeData data)
 	{
@@ -164,7 +164,7 @@ public class NBTDataDriver extends BinaryDataDriver
 			// ignore.
 			return;
 
-		Class type = obj.getClass();
+		Class<?> type = obj.getClass();
 
 		if (type.equals(Integer.class))
 		{
@@ -208,6 +208,21 @@ public class NBTDataDriver extends BinaryDataDriver
 			for (int i = 0; i < array.length; i++)
 			{
 				list.appendTag(new NBTTagDouble(name + "_" + i, array[i]));
+			}
+
+			tag.setTag(name, list);
+		}
+		else if (type.equals(Long.class))
+		{
+			tag.setLong(name, (Long) obj);
+		}
+		else if (type.equals(long[].class))
+		{
+			NBTTagList list = new NBTTagList();
+			long[] array = (long[]) obj;
+			for (int i = 0; i < array.length; i++)
+			{
+				list.appendTag(new NBTTagLong(name + "_" + i, array[i]));
 			}
 
 			tag.setTag(name, list);
@@ -291,6 +306,19 @@ public class NBTDataDriver extends BinaryDataDriver
 
 			return array;
 		}
+		if (type.equals(long.class))
+			return tag.getInteger(name);
+		else if (type.equals(long[].class))
+		{
+			NBTTagList list = tag.getTagList(name);
+			long[] array = new long[list.tagCount()];
+			for (int i = 0; i < array.length; i++)
+			{
+				array[i] = ((NBTTagLong) list.tagAt(i)).data;
+			}
+
+			return array;
+		}
 		else if (type.equals(boolean.class))
 			return tag.getBoolean(name);
 		else if (type.equals(boolean[].class))
@@ -326,6 +354,9 @@ public class NBTDataDriver extends BinaryDataDriver
 	{
 		File[] files = getTypePath(type).listFiles();
 		ArrayList<IReconstructData> data = new ArrayList<IReconstructData>();
+
+		if (files == null)
+			return new TypeData[0];
 
 		for (File file : files)
 		{

@@ -18,7 +18,7 @@ public class TypeInfoItemStack implements ITypeInfo<ItemStack>
 
 	public TypeInfoItemStack()
 	{
-	};
+	}
 
 	@Override
 	public void build()
@@ -91,13 +91,13 @@ public class TypeInfoItemStack implements ITypeInfo<ItemStack>
 	}
 
 	@Override
-	public Class[] getGenericTypes()
+	public Class<?>[] getGenericTypes()
 	{
 		return null;
 	}
 
 	@Override
-	public ITypeInfo getInfoForField(String field)
+	public ITypeInfo<?> getInfoForField(String field)
 	{
 		return DataStorageManager.getInfoForType(getTypeOfField(field));
 	}

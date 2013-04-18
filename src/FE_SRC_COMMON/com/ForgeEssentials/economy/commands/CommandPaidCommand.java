@@ -4,17 +4,15 @@ import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 
+import com.ForgeEssentials.api.economy.EconManager;
 import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
-import com.ForgeEssentials.economy.Wallet;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
-
-import cpw.mods.fml.common.FMLCommonHandler;
 
 public class CommandPaidCommand extends ForgeEssentialsCommandBase
 {
@@ -25,7 +23,7 @@ public class CommandPaidCommand extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List getCommandAliases()
+	public List<String> getCommandAliases()
 	{
 		return Arrays.asList("pc", "pcmd");
 	}
@@ -44,44 +42,39 @@ public class CommandPaidCommand extends ForgeEssentialsCommandBase
 		System.out.print(sender);
 		if (args.length >= 3)
 		{
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer player : players)
+				int amount = parseIntWithMin(sender, args[1], 0);
+				if (EconManager.getWallet(player.username) >= amount)
 				{
-					int amount = parseIntWithMin(sender, args[1], 0);
-					if (Wallet.getWallet(player) >= amount)
-					{
-						Wallet.removeFromWallet(amount, player);
-						// Do command in name of player
+					EconManager.removeFromWallet(amount, player.username);
+					// Do command in name of player
 
-						StringBuilder cmd = new StringBuilder(args.toString().length());
-						for (int i = 2; i < args.length; i++)
-						{
-							cmd.append(args[i]);
-							cmd.append(" ");
-						}
-
-						FMLCommonHandler.instance().getMinecraftServerInstance().getCommandManager().executeCommand(player, "" + cmd.toString());
-						OutputHandler.chatConfirmation(player, "That cost you " + amount + " " + Wallet.currency(amount));
-					}
-					else
+					StringBuilder cmd = new StringBuilder(args.toString().length());
+					for (int i = 2; i < args.length; i++)
 					{
-						OutputHandler.chatError(player, "You can't afford that!!");
+						cmd.append(args[i]);
+						cmd.append(" ");
 					}
+
+					MinecraftServer.getServer().executeCommand(cmd.toString());
+					OutputHandler.chatConfirmation(player, "That cost you " + amount + " " + EconManager.currency(amount));
+				}
+				else
+				{
+					OutputHandler.chatError(player, "You can't afford that!!");
 				}
 			}
 			else
 			{
+				//this should be removed
 				OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[0]));
 			}
 		}
 		else
-		{
+		{	
+			//this should be removed
 			sender.sendChatToPlayer(Localization.get(Localization.ERROR_BADSYNTAX) + getSyntaxConsole());
 		}
 	}
@@ -95,13 +88,19 @@ public class CommandPaidCommand extends ForgeEssentialsCommandBase
 	@Override
 	public String getCommandPerm()
 	{
-		return "";
+		return null;
 	}
 
 	@Override
 	public boolean canPlayerUseCommand(EntityPlayer player)
 	{
 		return false;
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		return null;
 	}
 
 }

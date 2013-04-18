@@ -5,10 +5,11 @@ import java.util.List;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.core.misc.LoginMessage;
 
-public class CommandMotd extends ForgeEssentialsCommandBase
+public class CommandMotd extends FEcmdModuleCommands
 {
 
 	@Override
@@ -20,21 +21,21 @@ public class CommandMotd extends ForgeEssentialsCommandBase
 	@Override
 	public void processCommandPlayer(EntityPlayer sender, String[] args)
 	{
-		LoginMessage.sendLoginMessage(sender);
 		if (args.length > 0 && args[0].equalsIgnoreCase("reload"))
 		{
 			LoginMessage.loadFile();
 		}
+		LoginMessage.sendLoginMessage(sender);
 	}
 
 	@Override
 	public void processCommandConsole(ICommandSender sender, String[] args)
 	{
-		LoginMessage.sendLoginMessage(sender);
 		if (args.length > 0 && args[0].equalsIgnoreCase("reload"))
 		{
 			LoginMessage.loadFile();
 		}
+		LoginMessage.sendLoginMessage(sender);
 	}
 
 	@Override
@@ -50,11 +51,17 @@ public class CommandMotd extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsMatchingLastWord(args, "reload");
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.GUESTS;
 	}
 }

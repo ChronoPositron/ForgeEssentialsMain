@@ -10,16 +10,20 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.Configuration;
 
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
+import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.commands.util.TPAdata;
 import com.ForgeEssentials.commands.util.TickHandlerCommands;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 import com.ForgeEssentials.util.TeleportCenter;
 import com.ForgeEssentials.util.AreaSelector.WarpPoint;
 
-public class CommandTPA extends ForgeEssentialsCommandBase
+public class CommandTPA extends FEcmdModuleCommands
 {
 	/*
 	 * Config
@@ -55,8 +59,8 @@ public class CommandTPA extends ForgeEssentialsCommandBase
 				{
 					if (data.receiver == sender)
 					{
-						data.sender.sendChatToPlayer("TPA accepted.");
-						data.receiver.sendChatToPlayer("TPA accepted.");
+						data.sender.sendChatToPlayer(Localization.get("command.tpa.accepted"));
+						data.receiver.sendChatToPlayer(Localization.get("command.tpa.accepted"));
 						TickHandlerCommands.tpaListToRemove.add(data);
 						TeleportCenter.addToTpQue(new WarpPoint(data.receiver), data.sender);
 						return;
@@ -74,8 +78,8 @@ public class CommandTPA extends ForgeEssentialsCommandBase
 				{
 					if (data.receiver == sender)
 					{
-						data.sender.sendChatToPlayer("TPA declined.");
-						data.receiver.sendChatToPlayer("TPA declined.");
+						data.sender.sendChatToPlayer(Localization.get("command.tpa.declined"));
+						data.receiver.sendChatToPlayer(Localization.get("command.tpa.declined"));
 						TickHandlerCommands.tpaListToRemove.add(data);
 						return;
 					}
@@ -83,8 +87,14 @@ public class CommandTPA extends ForgeEssentialsCommandBase
 			}
 			return;
 		}
-
-		EntityPlayerMP receiver = FunctionHelper.getPlayerFromPartialName(args[0]);
+		
+		if (!PermissionsAPI.checkPermAllowed(new PermQueryPlayer(sender, getCommandPerm() + ".sendrequest")))
+		{
+			OutputHandler.chatError(sender, Localization.get(Localization.ERROR_NOPERMISSION));
+			return;
+		}
+		
+		EntityPlayerMP receiver = FunctionHelper.getPlayerForName(sender, args[0]);
 		if (receiver == null)
 		{
 			sender.sendChatToPlayer(args[0] + " not found.");
@@ -93,15 +103,14 @@ public class CommandTPA extends ForgeEssentialsCommandBase
 		{
 			TickHandlerCommands.tpaListToAdd.add(new TPAdata((EntityPlayerMP) sender, receiver, false));
 
-			sender.sendChatToPlayer("Send a TPA request to " + receiver.username);
-			receiver.sendChatToPlayer("Got a TPA request from " + sender.username);
+			sender.sendChatToPlayer(Localization.format("command.tpa.sendRequest", receiver.username));
+			receiver.sendChatToPlayer(Localization.format("command.tpa.gotRequest", sender.username));
 		}
 	}
 
 	@Override
 	public void processCommandConsole(ICommandSender sender, String[] args)
 	{
-
 	}
 
 	@Override
@@ -117,7 +126,7 @@ public class CommandTPA extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender par1ICommandSender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender par1ICommandSender, String[] args)
 	{
 		if (args.length == 1)
 		{
@@ -129,5 +138,17 @@ public class CommandTPA extends ForgeEssentialsCommandBase
 		}
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.MEMBERS;
+	}
+	
+	@Override
+	public void registerExtraPermissions(IPermRegisterEvent event)
+	{
+		event.registerPermissionLevel(getCommandPerm() + ".sendrequest", getReggroup());
 	}
 }

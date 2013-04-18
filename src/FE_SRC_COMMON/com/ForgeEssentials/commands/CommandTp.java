@@ -1,6 +1,5 @@
 package com.ForgeEssentials.commands;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -9,8 +8,11 @@ import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.core.PlayerInfo;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
@@ -20,7 +22,7 @@ import com.ForgeEssentials.util.AreaSelector.WarpPoint;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
-public class CommandTp extends ForgeEssentialsCommandBase
+public class CommandTp extends FEcmdModuleCommands
 {
 
 	/** Spawn point for each dimension */
@@ -37,10 +39,10 @@ public class CommandTp extends ForgeEssentialsCommandBase
 	{
 		if (args.length == 1)
 		{
-			EntityPlayer target = FunctionHelper.getPlayerFromPartialName(args[0]);
+			EntityPlayer target = FunctionHelper.getPlayerForName(sender, args[0]);
 			if (PlayerSelector.hasArguments(args[0]))
 			{
-				target = PlayerSelector.matchOnePlayer(sender, args[0]);
+				target = FunctionHelper.getPlayerForName(sender, args[0]);
 			}
 			if (target != null)
 			{
@@ -54,33 +56,25 @@ public class CommandTp extends ForgeEssentialsCommandBase
 				OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[0]));
 			}
 		}
-		else if (args.length == 2)
+		else if (args.length == 2 && PermissionsAPI.checkPermAllowed(new PermQueryPlayer(sender, getCommandPerm() + ".others")))
 		{
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer player : players)
+				EntityPlayer target = FunctionHelper.getPlayerForName(sender, args[1]);
+				
+				if (target != null)
 				{
-					EntityPlayer target = FunctionHelper.getPlayerFromPartialName(args[1]);
-					if (PlayerSelector.hasArguments(args[1]))
-					{
-						target = PlayerSelector.matchOnePlayer(sender, args[1]);
-					}
-					if (target != null)
-					{
-						PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(player.username);
-						playerInfo.back = new WarpPoint(player);
-						TeleportCenter.addToTpQue(new WarpPoint(target), player);
-					}
-					else
-					{
-						OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[1]));
-						break;
-					}
+					PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(player.username);
+					playerInfo.back = new WarpPoint(player);
+					WarpPoint point = new WarpPoint(target);
+					FunctionHelper.setPlayer(player, point);
+				}
+				else
+				{
+					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[1]));
+					return;
 				}
 			}
 			else
@@ -93,82 +87,21 @@ public class CommandTp extends ForgeEssentialsCommandBase
 		{
 			if (args.length == 3)
 			{
-				int x = 0, y = 0, z = 0;
-				try
-				{
-					x = new Integer(args[0]);
-				}
-				catch (NumberFormatException e)
-				{
-					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[0]));
-					return;
-				}
-				try
-				{
-					y = new Integer(args[1]);
-				}
-				catch (NumberFormatException e)
-				{
-					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[1]));
-					return;
-				}
-				try
-				{
-					z = new Integer(args[2]);
-				}
-				catch (NumberFormatException e)
-				{
-					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[2]));
-					return;
-				}
-				EntityPlayerMP player = (EntityPlayerMP) sender;
+			    EntityPlayerMP player = (EntityPlayerMP) sender;
+			    int x = parseInt(sender, args[0], player.posX), y = parseInt(sender, args[1], player.posY), z = parseInt(sender, args[2], player.posZ);
 				PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(player.username);
 				playerInfo.back = new WarpPoint(player);
 				TeleportCenter.addToTpQue(new WarpPoint(player.dimension, x, y, z, player.rotationPitch, player.rotationYaw), player);
 			}
 			else if (args.length == 4)
 			{
-				int x = 0, y = 0, z = 0;
-				try
+				EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+				if (player != null)
 				{
-					x = new Integer(args[1]);
-				}
-				catch (NumberFormatException e)
-				{
-					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[1]));
-					return;
-				}
-				try
-				{
-					y = new Integer(args[2]);
-				}
-				catch (NumberFormatException e)
-				{
-					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[2]));
-					return;
-				}
-				try
-				{
-					z = new Integer(args[3]);
-				}
-				catch (NumberFormatException e)
-				{
-					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[3]));
-					return;
-				}
-				List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-				if (PlayerSelector.hasArguments(args[0]))
-				{
-					players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-				}
-				if (players.size() != 0)
-				{
-					for (EntityPlayer player : players)
-					{
-						PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(player.username);
-						playerInfo.back = new WarpPoint(player);
-						TeleportCenter.addToTpQue(new WarpPoint(player.dimension, x, y, z, player.rotationPitch, player.rotationYaw), player);
-					}
+				    int x = parseInt(sender, args[1], player.posX), y = parseInt(sender, args[2], player.posY), z = parseInt(sender, args[3], player.posZ);
+					PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(player.username);
+					playerInfo.back = new WarpPoint(player);
+					TeleportCenter.addToTpQue(new WarpPoint(player.dimension, x, y, z, player.rotationPitch, player.rotationYaw), player);
 				}
 				else
 				{
@@ -191,31 +124,24 @@ public class CommandTp extends ForgeEssentialsCommandBase
 	{
 		if (args.length == 2)
 		{
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer player : players)
+				EntityPlayer target = FunctionHelper.getPlayerForName(sender, args[0]);
+				if (PlayerSelector.hasArguments(args[1]))
 				{
-					EntityPlayer target = FunctionHelper.getPlayerFromPartialName(args[1]);
-					if (PlayerSelector.hasArguments(args[1]))
-					{
-						target = PlayerSelector.matchOnePlayer(sender, args[1]);
-					}
-					if (target != null)
-					{
-						PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(player.username);
-						playerInfo.back = new WarpPoint(player);
-						TeleportCenter.addToTpQue(new WarpPoint(target), player);
-					}
-					else
-					{
-						OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[1]));
-						break;
-					}
+					target = FunctionHelper.getPlayerForName(sender, args[1]);
+				}
+				if (target != null)
+				{
+					PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(player.username);
+					playerInfo.back = new WarpPoint(player);
+					TeleportCenter.addToTpQue(new WarpPoint(target), player);
+				}
+				else
+				{
+					OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[1]));
+					return;
 				}
 			}
 			else
@@ -226,48 +152,13 @@ public class CommandTp extends ForgeEssentialsCommandBase
 		}
 		else if (args.length == 4)
 		{
-
-			int x = 0, y = 0, z = 0;
-			try
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+			if (player != null)
 			{
-				x = new Integer(args[1]);
-			}
-			catch (NumberFormatException e)
-			{
-				sender.sendChatToPlayer(Localization.format(Localization.ERROR_NAN, args[1]));
-				return;
-			}
-			try
-			{
-				y = new Integer(args[2]);
-			}
-			catch (NumberFormatException e)
-			{
-				sender.sendChatToPlayer(Localization.format(Localization.ERROR_NAN, args[2]));
-				return;
-			}
-			try
-			{
-				z = new Integer(args[3]);
-			}
-			catch (NumberFormatException e)
-			{
-				sender.sendChatToPlayer(Localization.format(Localization.ERROR_NAN, args[3]));
-				return;
-			}
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
-			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer player : players)
-				{
-					PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(player.username);
-					playerInfo.back = new WarpPoint(player);
-					TeleportCenter.addToTpQue(new WarpPoint(player.dimension, x, y, z, player.rotationPitch, player.rotationYaw), player);
-				}
+			    int x = parseInt(sender, args[1], player.posX), y = parseInt(sender, args[2], player.posY), z = parseInt(sender, args[3], player.posZ);
+				PlayerInfo playerInfo = PlayerInfo.getPlayerInfo(player.username);
+				playerInfo.back = new WarpPoint(player);
+				TeleportCenter.addToTpQue(new WarpPoint(player.dimension, x, y, z, player.rotationPitch, player.rotationYaw), player);
 			}
 			else
 			{
@@ -293,11 +184,17 @@ public class CommandTp extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1 || args.length == 2)
 			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 }

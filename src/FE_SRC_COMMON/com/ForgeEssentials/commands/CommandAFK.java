@@ -6,19 +6,30 @@ import java.util.List;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.Configuration;
 
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
+import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
 import com.ForgeEssentials.commands.util.AFKdata;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.commands.util.TickHandlerCommands;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.util.Localization;
+import com.ForgeEssentials.util.OutputHandler;
 
-public class CommandAFK extends ForgeEssentialsCommandBase
+public class CommandAFK extends FEcmdModuleCommands
 {
-	public static List<String>	afkList	= new ArrayList();
+    public static CommandAFK instance;
+    public CommandAFK()
+    {
+        instance = this;
+    }
+    public final String         NOTICEPERM = getCommandPerm() + ".notice";
+	public static List<String>	afkList	= new ArrayList<String>();
 
-	/*
-	 * Config
-	 */
+	// Config
 	public static int			warmup	= 5;
 
 	@Override
@@ -37,7 +48,7 @@ public class CommandAFK extends ForgeEssentialsCommandBase
 	public void processCommandPlayer(EntityPlayer sender, String[] args)
 	{
 		TickHandlerCommands.afkListToAdd.add(new AFKdata((EntityPlayerMP) sender));
-		sender.sendChatToPlayer("Stand still for " + warmup + "seconds.");
+		OutputHandler.chatConfirmation(sender, Localization.format("command.afk.warmup", warmup));
 	}
 
 	@Override
@@ -57,23 +68,47 @@ public class CommandAFK extends ForgeEssentialsCommandBase
 		return "ForgeEssentials.BasicCommands." + getCommandName();
 	}
 
-	public static void abort(AFKdata afKdata)
+	public void abort(AFKdata afkData)
 	{
-		if (!afKdata.player.capabilities.isCreativeMode)
-		{
-			afKdata.player.capabilities.disableDamage = false;
-			afKdata.player.sendPlayerAbilities();
-		}
-		afKdata.player.sendChatToPlayer("AFK lifted.");
-		afkList.remove(afKdata.player.username);
-		TickHandlerCommands.afkListToRemove.add(afKdata);
+		if (!afkData.player.capabilities.isCreativeMode)
+			afkData.player.capabilities.disableDamage = false;
+		afkData.player.sendPlayerAbilities();
+		afkList.remove(afkData.player.username);
+		TickHandlerCommands.afkListToRemove.add(afkData);
+		
+		if (PermissionsAPI.checkPermAllowed(new PermQueryPlayer(afkData.player, NOTICEPERM)))
+		    MinecraftServer.getServer().getConfigurationManager().sendChatMsg(Localization.format("command.afk.notice.out", afkData.player.username));
+		else
+		    OutputHandler.chatConfirmation(afkData.player, Localization.get("command.afk.out"));
 	}
 
-	public static void makeAFK(AFKdata afKdata)
+	public void makeAFK(AFKdata afkData)
 	{
-		afKdata.player.capabilities.disableDamage = true;
-		afKdata.player.sendPlayerAbilities();
-		afkList.add(afKdata.player.username);
-		afKdata.player.sendChatToPlayer("You are now AFK.");
+		afkData.player.capabilities.disableDamage = true;
+		afkData.player.sendPlayerAbilities();
+		afkList.add(afkData.player.username);
+		
+		if (PermissionsAPI.checkPermAllowed(new PermQueryPlayer(afkData.player, NOTICEPERM)))
+		    MinecraftServer.getServer().getConfigurationManager().sendChatMsg(Localization.format("command.afk.notice.in", afkData.player.username));
+		else
+		    OutputHandler.chatConfirmation(afkData.player, Localization.get("command.afk.in"));
+	}
+	
+	@Override
+	public void registerExtraPermissions(IPermRegisterEvent event)
+	{
+	    event.registerPermissionLevel(NOTICEPERM, RegGroup.MEMBERS);
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.MEMBERS;
 	}
 }

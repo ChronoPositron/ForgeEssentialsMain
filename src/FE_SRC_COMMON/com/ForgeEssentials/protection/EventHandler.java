@@ -1,8 +1,13 @@
 package com.ForgeEssentials.protection;
 
+import static net.minecraftforge.event.Event.Result.ALLOW;
+import static net.minecraftforge.event.Event.Result.DENY;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
+import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.event.Event.Result;
 import net.minecraftforge.event.EventPriority;
 import net.minecraftforge.event.ForgeSubscribe;
@@ -18,6 +23,7 @@ import com.ForgeEssentials.api.permissions.query.PermQuery;
 import com.ForgeEssentials.api.permissions.query.PermQueryBlanketSpot;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayerArea;
+import com.ForgeEssentials.core.misc.UnfreindlyItemList;
 import com.ForgeEssentials.util.OutputHandler;
 import com.ForgeEssentials.util.AreaSelector.WorldPoint;
 import com.ForgeEssentials.util.events.PlayerBlockBreak;
@@ -79,7 +85,7 @@ public class EventHandler
 			return;
 
 		EntityLiving source = (EntityLiving) e.source.getEntity();
-		
+
 		boolean sourcePlayer = e.source.getEntity() instanceof EntityPlayer;
 		boolean targetPlayer = e.entityLiving instanceof EntityPlayer;
 
@@ -88,37 +94,38 @@ public class EventHandler
 
 		if (sourcePlayer && targetPlayer)
 		{
-			
+
 			// PVP checks
-			
+
 			boolean sourceB = !PermissionsAPI.checkPermAllowed(new PermQueryPlayerArea((EntityPlayer) e.entityLiving, ModuleProtection.PERM_PVP, new WorldPoint(e.source.getEntity())));
-			
+
 			if (sourceB)
 			{
 				e.setCanceled(true);
 				return;
 			}
-			
+
 			boolean receiverB = !PermissionsAPI.checkPermAllowed(new PermQueryPlayer((EntityPlayer) e.source.getEntity(), ModuleProtection.PERM_PVP));
 
-			
 			if (sourceB || receiverB)
+			{
 				e.setCanceled(true);
+			}
 		}
 		else if (sourcePlayer)
 		{
-				// stop players hitting animals.
+			// stop players hitting animals.
 
-				PermQuery query = new PermQueryPlayerArea((EntityPlayer) source, ModuleProtection.PERM_OVERRIDE, new WorldPoint(e.entityLiving));
-				Boolean result = PermissionsAPI.checkPermAllowed(query);
+			PermQuery query = new PermQueryPlayerArea((EntityPlayer) source, ModuleProtection.PERM_OVERRIDE, new WorldPoint(e.entityLiving));
+			Boolean result = PermissionsAPI.checkPermAllowed(query);
 
-				if (!result)
-				{
-					query = new PermQueryPlayerArea((EntityPlayer) source, ModuleProtection.PERM_INTERACT_ENTITY, new WorldPoint(e.entityLiving));
-					result = PermissionsAPI.checkPermAllowed(query);
-				}
+			if (!result)
+			{
+				query = new PermQueryPlayerArea((EntityPlayer) source, ModuleProtection.PERM_INTERACT_ENTITY, new WorldPoint(e.entityLiving));
+				result = PermissionsAPI.checkPermAllowed(query);
+			}
 
-				e.setCanceled(!result);
+			e.setCanceled(!result);
 		}
 		else if (targetPlayer)
 		{
@@ -145,7 +152,7 @@ public class EventHandler
 
 		WorldPoint point = new WorldPoint(e.player.dimension, e.blockX, e.blockY, e.blockZ);
 		PermQuery query = new PermQueryPlayerArea(e.player, ModuleProtection.PERM_OVERRIDE, point);
-		Boolean result = PermissionsAPI.checkPermAllowed(query);
+		boolean result = PermissionsAPI.checkPermAllowed(query);
 
 		if (!result)
 		{
@@ -164,19 +171,65 @@ public class EventHandler
 
 		WorldPoint point = new WorldPoint(e.player.dimension, e.blockX, e.blockY, e.blockZ);
 		PermQuery query = new PermQueryPlayerArea(e.player, ModuleProtection.PERM_OVERRIDE, point);
-		Boolean result = PermissionsAPI.checkPermAllowed(query);
+		boolean result = PermissionsAPI.checkPermAllowed(query);
 
 		if (!result)
 		{
 			query = new PermQueryPlayerArea(e.player, ModuleProtection.PERM_EDITS, point);
 			result = PermissionsAPI.checkPermAllowed(query);
 		}
-
 		e.setCanceled(!result);
 	}
 
 	@ForgeSubscribe(priority = EventPriority.LOW)
-	public void playerInteractEvent(PlayerInteractEvent e)
+	public void playerInteractEventItemUse(PlayerInteractEvent e)
+	{
+		if (e.action.equals(PlayerInteractEvent.Action.LEFT_CLICK_BLOCK))
+			return;
+
+		// item check
+		ItemStack stack = e.entityPlayer.getCurrentEquippedItem();
+		if (stack == null)
+			return;
+
+		WorldPoint point = new WorldPoint(e.entityPlayer);
+		if (e.action.equals(PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK))
+		{
+			if (stack.getItem() instanceof ItemBlock)
+			{
+				// calculate offsets.
+				ForgeDirection dir = ForgeDirection.getOrientation(e.face);
+				int x = e.x + dir.offsetX;
+				int y = e.y + dir.offsetY;
+				int z = e.z + dir.offsetZ;
+
+				point = new WorldPoint(e.entityPlayer.dimension, x, y, z);
+			}
+			else
+				point = new WorldPoint(e.entityPlayer.dimension, e.x, e.y, e.z);
+		}
+
+		PermQuery query = new PermQueryPlayerArea(e.entityPlayer, ModuleProtection.PERM_OVERRIDE, point);
+		boolean result = PermissionsAPI.checkPermAllowed(query);
+
+		if (!result)
+		{
+			String name = UnfreindlyItemList.getName(stack.itemID);
+			name = ModuleProtection.PERM_ITEM_USE + "." + name;
+			name = name + "." + stack.getItemDamage();
+
+			query = new PermQueryPlayerArea(e.entityPlayer, name, point);
+			result = PermissionsAPI.checkPermAllowed(query);
+		}
+		
+		if (result)
+			e.useItem = ALLOW;
+		else
+			e.useItem = DENY;
+	}
+
+	@ForgeSubscribe(priority = EventPriority.LOW)
+	public void playerInteractEventBlockUse(PlayerInteractEvent e)
 	{
 		if (FMLCommonHandler.instance().getEffectiveSide().isClient())
 			return;
@@ -185,15 +238,19 @@ public class EventHandler
 		{
 			WorldPoint point = new WorldPoint(e.entityPlayer.dimension, e.x, e.y, e.z);
 			PermQuery query = new PermQueryPlayerArea(e.entityPlayer, ModuleProtection.PERM_OVERRIDE, point);
-			Boolean result = PermissionsAPI.checkPermAllowed(query);
+			boolean result = PermissionsAPI.checkPermAllowed(query);
 
 			if (!result)
 			{
+				// check block usage perm
 				query = new PermQueryPlayerArea(e.entityPlayer, ModuleProtection.PERM_INTERACT_BLOCK, point);
 				result = PermissionsAPI.checkPermAllowed(query);
 			}
-
-			e.setCanceled(!result);
+			
+			if (result)
+				e.useBlock = ALLOW;
+			else
+				e.useBlock = DENY;
 		}
 	}
 
@@ -216,43 +273,45 @@ public class EventHandler
 
 		e.setCanceled(!result);
 	}
-	
+
 	@ForgeSubscribe(priority = EventPriority.LOW)
 	public void handleSpawn(CheckSpawn e)
 	{
 		// ignore players
 		if (!ModuleProtection.enableMobSpawns || e.entityLiving instanceof EntityPlayer)
 			return;
-		
+
 		WorldPoint point = new WorldPoint(e.entityLiving);
 		String mobID = EntityList.getEntityString(e.entity);
-		
-		PermQueryBlanketSpot query = new PermQueryBlanketSpot(point, ModuleProtection.PERM_MOB_SPAWN_NATURAL+"."+mobID);
-		
+
+		PermQueryBlanketSpot query = new PermQueryBlanketSpot(point, ModuleProtection.PERM_MOB_SPAWN_NATURAL + "." + mobID);
+
 		if (!PermissionsAPI.checkPermAllowed(query))
 		{
 			e.setResult(Result.DENY);
-			OutputHandler.debug(mobID+" : DENIED");
+			OutputHandler.debug(mobID + " : DENIED");
 		}
 		else
 		{
-			OutputHandler.debug(mobID+" : ALLOWED");
+			OutputHandler.debug(mobID + " : ALLOWED");
 		}
 	}
-	
+
 	@ForgeSubscribe(priority = EventPriority.LOW)
 	public void handleSpawn(SpecialSpawn e)
 	{
 		// ignore players
 		if (!ModuleProtection.enableMobSpawns || e.entityLiving instanceof EntityPlayer)
 			return;
-		
+
 		WorldPoint point = new WorldPoint(e.entityLiving);
 		String mobID = EntityList.getEntityString(e.entity);
-		
-		PermQueryBlanketSpot query = new PermQueryBlanketSpot(point, ModuleProtection.PERM_MOB_SPAWN_FORCED+"."+mobID);
-		
+
+		PermQueryBlanketSpot query = new PermQueryBlanketSpot(point, ModuleProtection.PERM_MOB_SPAWN_FORCED + "." + mobID);
+
 		if (!PermissionsAPI.checkPermAllowed(query))
+		{
 			e.setResult(Result.DENY);
+		}
 	}
 }

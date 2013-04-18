@@ -8,43 +8,51 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagString;
 import net.minecraftforge.common.Configuration;
 
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.RegGroup;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.core.ForgeEssentials;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.util.FEChatFormatCodes;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 
-public class CommandRules extends ForgeEssentialsCommandBase
+public class CommandRules extends FEcmdModuleCommands
 {
 
 	public static final String[]	autocomargs	=
-												{ "add", "remove", "move", "change" };
+												{ "add", "remove", "move", "change", "book" };
 	public static ArrayList<String>	rules;
 	public static File				rulesFile	= new File(ForgeEssentials.FEDIR, "rules.txt");
 
 	@Override
 	public void doConfig(Configuration config, String category)
 	{
-		rulesFile = new File(ForgeEssentials.FEDIR, config.get(category, "filename", "rules.txt").value);
+		rulesFile = new File(ForgeEssentials.FEDIR, config.get(category, "filename", "rules.txt").getString());
 		rules = loadRules();
 	}
 
 	public ArrayList<String> loadRules()
 	{
-		// Rules the rules file will be a flat strings file.. nothing special.
 		ArrayList<String> rules = new ArrayList<String>();
-
-		// somehow a new rules.txt is generated EVERY load.
 
 		OutputHandler.info("Loading rules");
 		if (!rulesFile.exists())
@@ -186,6 +194,33 @@ public class CommandRules extends ForgeEssentialsCommandBase
 			}
 			return;
 		}
+		if (args[0].equalsIgnoreCase("book"))
+		{
+			NBTTagCompound tag = new NBTTagCompound();
+			NBTTagList pages = new NBTTagList();
+
+			HashMap<String, String> map = new HashMap<String, String>();
+
+			for (int i = 0; i < rules.size(); i++)
+			{
+				map.put(FEChatFormatCodes.UNDERLINE + "Rule #" + (i + 1) + "\n\n", FEChatFormatCodes.RESET + FunctionHelper.formatColors(rules.get(i)));
+			}
+
+			SortedSet<String> keys = new TreeSet<String>(map.keySet());
+			for (String name : keys)
+			{
+				pages.appendTag(new NBTTagString("", name + map.get(name)));
+			}
+
+			tag.setString("author", "ForgeEssentials");
+			tag.setString("title", "Rule Book");
+			tag.setTag("pages", pages);
+
+			ItemStack is = new ItemStack(Item.writtenBook);
+			is.setTagCompound(tag);
+			sender.inventory.addItemStackToInventory(is);
+			return;
+		}
 		if (args.length == 1)
 		{
 			if (args[0].equalsIgnoreCase("help"))
@@ -218,7 +253,7 @@ public class CommandRules extends ForgeEssentialsCommandBase
 			index = parseIntBounded(sender, args[1], 1, rules.size());
 
 			rules.remove(index - 1);
-			OutputHandler.chatConfirmation(sender, "Rule #" + args[1] + " removed.");
+			OutputHandler.chatConfirmation(sender, Localization.format("command.rules.remove", args[1]));
 		}
 		else if (args[0].equalsIgnoreCase("add"))
 		{
@@ -229,7 +264,7 @@ public class CommandRules extends ForgeEssentialsCommandBase
 			}
 			newRule = FunctionHelper.formatColors(newRule);
 			rules.add(newRule);
-			OutputHandler.chatConfirmation(sender, "Rule #" + rules.size() + ": " + rules.get(rules.size() - 1) + "&r Added!");
+			OutputHandler.chatConfirmation(sender, Localization.format("command.rules.added", args[1]));
 		}
 		else if (args[0].equalsIgnoreCase("move"))
 		{
@@ -242,12 +277,12 @@ public class CommandRules extends ForgeEssentialsCommandBase
 			if (index < rules.size())
 			{
 				rules.add(index - 1, temp);
-				OutputHandler.chatConfirmation(sender, "Rule #" + args[1] + ": " + temp + "&r Moved to: " + args[2]);
+				OutputHandler.chatConfirmation(sender, Localization.format("command.rules.moved", args[1], args[2]));
 			}
 			else
 			{
 				rules.add(temp);
-				OutputHandler.chatConfirmation(sender, "Rule #" + args[1] + ": " + temp + "&r Moved to last position.");
+				OutputHandler.chatConfirmation(sender, Localization.format("command.rules.movedToLast", args[1]));
 			}
 		}
 		else if (args[0].equalsIgnoreCase("change"))
@@ -261,7 +296,7 @@ public class CommandRules extends ForgeEssentialsCommandBase
 			}
 			newRule = FunctionHelper.formatColors(newRule);
 			rules.set(index - 1, newRule);
-			OutputHandler.chatConfirmation(sender, "Rule #" + index + " changed to &r" + newRule);
+			OutputHandler.chatConfirmation(sender, Localization.format("command.rules.changed", index + "", newRule));
 		}
 		else
 		{
@@ -304,7 +339,7 @@ public class CommandRules extends ForgeEssentialsCommandBase
 			index = parseIntBounded(sender, args[1], 1, rules.size());
 
 			rules.remove(index - 1);
-			OutputHandler.chatConfirmation(sender, "Rule #" + args[1] + " removed.");
+			OutputHandler.chatConfirmation(sender, Localization.format("command.rules.remove", args[1]));
 		}
 		else if (args[0].equalsIgnoreCase("add"))
 		{
@@ -315,7 +350,7 @@ public class CommandRules extends ForgeEssentialsCommandBase
 			}
 			newRule = FunctionHelper.formatColors(newRule);
 			rules.add(newRule);
-			OutputHandler.chatConfirmation(sender, "Rule #" + rules.size() + ": " + rules.get(rules.size() - 1) + "&r Added!");
+			OutputHandler.chatConfirmation(sender, Localization.format("command.rules.added", args[1]));
 		}
 		else if (args[0].equalsIgnoreCase("move"))
 		{
@@ -328,12 +363,12 @@ public class CommandRules extends ForgeEssentialsCommandBase
 			if (index < rules.size())
 			{
 				rules.add(index - 1, temp);
-				OutputHandler.chatConfirmation(sender, "Rule #" + args[1] + ": " + temp + "&r Moved to: " + args[2]);
+				OutputHandler.chatConfirmation(sender, Localization.format("command.rules.moved", args[1], args[2]));
 			}
 			else
 			{
 				rules.add(temp);
-				OutputHandler.chatConfirmation(sender, "Rule #" + args[1] + ": " + temp + "&r Moved to last position.");
+				OutputHandler.chatConfirmation(sender, Localization.format("command.rules.movedToLast", args[1]));
 			}
 		}
 		else if (args[0].equalsIgnoreCase("change"))
@@ -347,7 +382,7 @@ public class CommandRules extends ForgeEssentialsCommandBase
 			}
 			newRule = FunctionHelper.formatColors(newRule);
 			rules.set(index - 1, newRule);
-			OutputHandler.chatConfirmation(sender, "Rule #" + index + " changed to &r" + newRule);
+			OutputHandler.chatConfirmation(sender, Localization.format("command.rules.changed", index + "", newRule));
 		}
 		else
 		{
@@ -369,7 +404,13 @@ public class CommandRules extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public void registerExtraPermissions(IPermRegisterEvent event)
+	{
+		event.registerPermissionLevel(getCommandPerm() + ".edit", RegGroup.OWNERS);
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsMatchingLastWord(args, autocomargs);
@@ -393,6 +434,12 @@ public class CommandRules extends ForgeEssentialsCommandBase
 		}
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 
 }

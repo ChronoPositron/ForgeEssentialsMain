@@ -7,13 +7,15 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.dedicated.DedicatedServer;
 
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.util.FunctionHelper;
+import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
-public class CommandServerSettings extends ForgeEssentialsCommandBase
+public class CommandServerSettings extends FEcmdModuleCommands
 {
 	public static List<String>	options	= Arrays.asList("allowFlight", "allowPVP", "buildLimit", "difficulty", "MOTD", "onlineMode", "spawnProtection");
 
@@ -49,7 +51,7 @@ public class CommandServerSettings extends ForgeEssentialsCommandBase
 		DedicatedServer server = (DedicatedServer) FMLCommonHandler.instance().getMinecraftServerInstance();
 		if (args.length == 0)
 		{
-			sender.sendChatToPlayer("Available options:");
+			sender.sendChatToPlayer(Localization.get("command.serversettings.list"));
 			sender.sendChatToPlayer(options.toString());
 			return;
 		}
@@ -152,11 +154,17 @@ public class CommandServerSettings extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender par1ICommandSender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender par1ICommandSender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsFromIterableMatchingLastWord(args, options);
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 }

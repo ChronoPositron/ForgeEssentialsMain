@@ -1,15 +1,19 @@
 package com.ForgeEssentials.economy.commands;
 
+import java.util.List;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import com.ForgeEssentials.api.economy.EconManager;
 import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
-import com.ForgeEssentials.economy.Wallet;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
+
+import cpw.mods.fml.common.FMLCommonHandler;
 
 public class CommandPay extends ForgeEssentialsCommandBase
 {
@@ -24,7 +28,7 @@ public class CommandPay extends ForgeEssentialsCommandBase
 	{
 		if (args.length == 2)
 		{
-			EntityPlayerMP player = FunctionHelper.getPlayerFromPartialName(args[0]);
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
 			if (player == null)
 			{
 				sender.sendChatToPlayer(args[0] + " not found!");
@@ -32,12 +36,12 @@ public class CommandPay extends ForgeEssentialsCommandBase
 			else
 			{
 				int amount = parseIntWithMin(sender, args[1], 0);
-				if (Wallet.getWallet(sender) >= amount)
+				if (EconManager.getWallet(sender.username) >= amount)
 				{
-					Wallet.removeFromWallet(amount, sender);
-					Wallet.addToWallet(amount, player);
-					OutputHandler.chatConfirmation(sender, "You have payed " + player.username + " " + amount);
-					OutputHandler.chatConfirmation(player, "You have been payed " + amount + " by " + sender.getCommandSenderName());
+					EconManager.removeFromWallet(amount, sender.username);
+					EconManager.addToWallet(amount, player.username);
+					OutputHandler.chatConfirmation(sender, "You have payed " + player.username + " " + amount + " " + EconManager.currency(amount));
+					OutputHandler.chatConfirmation(player, "You have been payed " + amount + " " + EconManager.currency(amount) + " by " + sender.getCommandSenderName());
 				}
 				else
 				{
@@ -56,10 +60,10 @@ public class CommandPay extends ForgeEssentialsCommandBase
 	{
 		if (args.length == 2)
 		{
-			EntityPlayerMP player = FunctionHelper.getPlayerFromPartialName(args[0]);
+			EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
 			if (PlayerSelector.hasArguments(args[0]))
 			{
-				player = PlayerSelector.matchOnePlayer(sender, args[0]);
+				player = FunctionHelper.getPlayerForName(sender, args[0]);
 			}
 			if (player == null)
 			{
@@ -68,9 +72,9 @@ public class CommandPay extends ForgeEssentialsCommandBase
 			else
 			{
 				int amount = parseIntWithMin(sender, args[1], 0);
-				Wallet.addToWallet(amount, player);
-				OutputHandler.chatConfirmation(sender, "You have payed " + player.username + " " + amount + " " + Wallet.currency(amount));
-				OutputHandler.chatConfirmation(player, "You have been payed " + amount + " " + Wallet.currency(amount) + " by " + sender.getCommandSenderName());
+				EconManager.addToWallet(amount, player.username);
+				OutputHandler.chatConfirmation(sender, "You have payed " + player.username + " " + amount + " " + EconManager.currency(amount));
+				OutputHandler.chatConfirmation(player, "You have been payed " + amount + " " + EconManager.currency(amount) + " by " + sender.getCommandSenderName());
 			}
 		}
 		else
@@ -89,5 +93,14 @@ public class CommandPay extends ForgeEssentialsCommandBase
 	public String getCommandPerm()
 	{
 		return "ForgeEssentials.Economy." + getCommandName();
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		if (args.length == 1)
+			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
+		else
+			return null;
 	}
 }

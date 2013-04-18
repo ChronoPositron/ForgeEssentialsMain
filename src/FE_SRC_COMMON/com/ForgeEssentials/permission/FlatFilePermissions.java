@@ -30,8 +30,9 @@ public class FlatFilePermissions
 		PermissionHolder holder;
 		String catName;
 		String[] split;
-		for (ConfigCategory cat : config.categories.values())
+		for (String catName2 : config.getCategoryNames())
 		{
+			ConfigCategory cat = config.getCategory(catName2);
 			if (!cat.isChild())
 			{
 				continue;
@@ -83,12 +84,12 @@ public class FlatFilePermissions
 
 		for (PermissionHolder holder : players)
 		{
-			config.get(holder.zone + ".player." + holder.target, holder.getQualifiedname(), holder.allowed);
+			config.get(holder.zone + ".player." + holder.target, holder.getQualifiedName(), holder.allowed);
 		}
 
 		for (PermissionHolder holder : groups)
 		{
-			config.get(holder.zone + ".group." + holder.target, holder.getQualifiedname(), holder.allowed);
+			config.get(holder.zone + ".group." + holder.target, holder.getQualifiedName(), holder.allowed);
 		}
 
 		config.addCustomCategoryComment(ZoneManager.getGLOBAL().getZoneName() + ".group." + PermissionsAPI.getDEFAULT().name, "The group used to as a placeholder for zone flags and such.");

@@ -1,15 +1,17 @@
 package com.ForgeEssentials.core.commands;
 
+import java.util.List;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemInWorldManager;
 import net.minecraft.item.ItemStack;
 
+import com.ForgeEssentials.core.preloader.Data;
 import com.ForgeEssentials.core.preloader.asm.FEeventAdder;
 
 public class CommandFEDebug extends ForgeEssentialsCommandBase
 {
-
 	@Override
 	public String getCommandName()
 	{
@@ -39,7 +41,7 @@ public class CommandFEDebug extends ForgeEssentialsCommandBase
 			else
 			{
 				sender.sendChatToPlayer("The custom event 'PlayerBlockBreak' was NOT added. Some functions might not work!");
-				sender.sendChatToPlayer("The classname should be '" + FEeventAdder.isHMob.get("className") + "' but is '" + ItemInWorldManager.class.getName() + "'.");
+				sender.sendChatToPlayer("The classname should be '" + Data.isHMob.get("className") + "' but is '" + ItemInWorldManager.class.getName() + "'.");
 			}
 		}
 		catch (Exception ex)
@@ -56,7 +58,7 @@ public class CommandFEDebug extends ForgeEssentialsCommandBase
 			else
 			{
 				sender.sendChatToPlayer("The custom event 'PlayerBlockPlace' was NOT added. Some functions might not work!");
-				sender.sendChatToPlayer("The classname should be '" + FEeventAdder.isHMob.get("className") + "' but is '" + ItemStack.class.getName() + "'.");
+				sender.sendChatToPlayer("The classname should be '" + Data.isHMob.get("className") + "' but is '" + ItemStack.class.getName() + "'.");
 			}
 		}
 		catch (Exception ex)
@@ -72,15 +74,38 @@ public class CommandFEDebug extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public boolean canPlayerUseCommand(EntityPlayer player)
+	public String getCommandPerm()
 	{
-		return true;
+		return "ForgeEssentials.CoreCommands." + getCommandName();
 	}
 
 	@Override
-	public String getCommandPerm()
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		return null;
 	}
+	
+	@Override
+	public String getSyntaxConsole()
+	{
+		return "";
+	}
 
+	@Override
+	public String getSyntaxPlayer(EntityPlayer player)
+	{
+		return "";
+	}
+
+	@Override
+	public String getInfoConsole()
+	{
+		return "Use if you need help with FE related stuff";
+	}
+
+	@Override
+	public String getInfoPlayer(EntityPlayer player)
+	{
+		return "Use if you need help with FE related stuff";
+	}
 }

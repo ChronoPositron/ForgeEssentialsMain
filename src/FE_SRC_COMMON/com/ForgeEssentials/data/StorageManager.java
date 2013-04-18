@@ -28,23 +28,23 @@ import com.ForgeEssentials.data.typeInfo.TypeInfoSerialize;
 import com.ForgeEssentials.data.typeInfo.TypeInfoSet;
 import com.ForgeEssentials.data.typeInfo.TypeInfoStandard;
 import com.ForgeEssentials.util.DBConnector;
+import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.OutputHandler;
 import com.google.common.base.Throwables;
 
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class StorageManager implements IStorageManager
 {
 	// just keeps an instance of the config for future use.
 	private Configuration													config;
-	private static final String												configCategory	= "data";
 	public static final EnumDriverType										defaultDriver	= EnumDriverType.TEXT;
 	private EnumDriverType													chosen			= defaultDriver;
 	private ConcurrentHashMap<EnumDriverType, String>						typeChosens;													// the defaults...
 	private ConcurrentHashMap<String, Class<? extends AbstractDataDriver>>	classMap;														// registered ones...
 	private ConcurrentHashMap<String, AbstractDataDriver>					instanceMap;													// instantiated ones
 	private static StorageManager											instance;
-	private boolean															loaded			= false;
 	private ConcurrentHashMap<String, ITypeInfo>							taggerList		= new ConcurrentHashMap<String, ITypeInfo>();
 
 	public StorageManager(Configuration config)
@@ -59,8 +59,8 @@ public class StorageManager implements IStorageManager
 
 		// generates the configs...
 		Property prop = config.get("Data", "storageType", defaultDriver.toString());
-		prop.comment = "Specifies the variety of data storage FE will use. Options: " + EnumDriverType.getAll(" ");
-		chosen = EnumDriverType.valueOf(prop.value);
+		prop.comment = "Specifies the variety of data storage FE will use. Options: " + FunctionHelper.niceJoin(EnumDriverType.values());
+		chosen = EnumDriverType.valueOf(prop.getString());
 
 		typeChosens.put(EnumDriverType.TEXT, "ForgeConfig");
 		typeChosens.put(EnumDriverType.BINARY, "NBT");
@@ -75,7 +75,7 @@ public class StorageManager implements IStorageManager
 			}
 			cat = "Data." + type;
 			prop = config.get(cat, "chosenDriver", typeChosens.get(type));
-			typeChosens.put(type, prop.value);
+			typeChosens.put(type, prop.getString());
 		}
 
 		instance = this;
@@ -107,16 +107,14 @@ public class StorageManager implements IStorageManager
 				e.printStackTrace();
 			}
 		}
-
-		loaded = true;
 	}
-	
+
 	/**
 	 * Passes the ServerStart event to the dataDrivers
 	 */
 	public void serverStart(FMLServerStartingEvent event)
 	{
-		for (IDataDriver driver: instanceMap.values())
+		for (IDataDriver driver : instanceMap.values())
 		{
 			// things MAY error here as well...
 			driver.serverStart(event);
@@ -181,7 +179,7 @@ public class StorageManager implements IStorageManager
 
 		if (type.isArray() && !type.getType().getComponentType().isPrimitive() && !String.class.isAssignableFrom(type.getType().getComponentType()))
 		{
-			info = new TypeInfoArray(new ClassContainer(type.getType(), type.getType().getComponentType()));
+			info = new TypeInfoArray(new ClassContainer(type.getType()));
 		}
 		else if (Map.class.isAssignableFrom(type.getType()))
 		{
@@ -369,7 +367,7 @@ public class StorageManager implements IStorageManager
 			return tagged;
 		}
 
-		return taggerList.get(tempType);
+		return taggerList.get(tempType.toString());
 	}
 
 	@Override
@@ -412,7 +410,7 @@ public class StorageManager implements IStorageManager
 		boolean flag = true;
 		if (type.isPrimitive() || type.equals(Integer.class) || type.equals(Float.class) ||
 				type.equals(Double.class) || type.equals(Boolean.class) || type.equals(String.class) ||
-				type.equals(Byte.class))
+				type.equals(Byte.class) || type.equals(Long.class))
 		{
 			flag = false;
 		}

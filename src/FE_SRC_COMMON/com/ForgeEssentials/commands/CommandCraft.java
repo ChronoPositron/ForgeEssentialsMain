@@ -1,16 +1,18 @@
 package com.ForgeEssentials.commands;
 
+import java.util.List;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.packet.Packet100OpenWindow;
 
+import com.ForgeEssentials.api.permissions.RegGroup;
 import com.ForgeEssentials.commands.util.ContainerCheatyWorkbench;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 
-public class CommandCraft extends ForgeEssentialsCommandBase
+public class CommandCraft extends FEcmdModuleCommands
 {
-
 	@Override
 	public String getCommandName()
 	{
@@ -22,7 +24,7 @@ public class CommandCraft extends ForgeEssentialsCommandBase
 	{
 		EntityPlayerMP player = (EntityPlayerMP) sender;
 		player.incrementWindowID();
-		player.playerNetServerHandler.sendPacketToPlayer(new Packet100OpenWindow(player.currentWindowId, 1, "Crafting", 9));
+		player.playerNetServerHandler.sendPacketToPlayer(new Packet100OpenWindow(player.currentWindowId, 1, "Crafting", 9, true));
 		player.openContainer = new ContainerCheatyWorkbench(player.inventory, player.worldObj);
 		player.openContainer.windowId = player.currentWindowId;
 		player.openContainer.addCraftingToCrafters(player);
@@ -31,7 +33,6 @@ public class CommandCraft extends ForgeEssentialsCommandBase
 	@Override
 	public void processCommandConsole(ICommandSender sender, String[] args)
 	{
-		// NOOP
 	}
 
 	@Override
@@ -44,5 +45,17 @@ public class CommandCraft extends ForgeEssentialsCommandBase
 	public String getCommandPerm()
 	{
 		return "ForgeEssentials.BasicCommands." + getCommandName();
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.MEMBERS;
 	}
 }

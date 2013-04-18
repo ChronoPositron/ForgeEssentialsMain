@@ -1,5 +1,8 @@
 package com.ForgeEssentials.core.commands.selections;
 
+import java.util.Arrays;
+import java.util.List;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 
@@ -14,7 +17,13 @@ public class CommandDeselect extends ForgeEssentialsCommandBase
 	@Override
 	public String getCommandName()
 	{
-		return "fedesel";
+		return "/fedesel";
+	}
+	
+	@Override
+	public List<String> getCommandAliases()
+	{
+		return Arrays.asList("/fedeselect");
 	}
 
 	@Override
@@ -27,18 +36,6 @@ public class CommandDeselect extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public String getSyntaxPlayer(EntityPlayer player)
-	{
-		return "/" + getCommandName();
-	}
-
-	@Override
-	public String getInfoPlayer(EntityPlayer player)
-	{
-		return "Clears the currently selected area";
-	}
-
-	@Override
 	public void processCommandConsole(ICommandSender sender, String[] args)
 	{
 	}
@@ -46,14 +43,18 @@ public class CommandDeselect extends ForgeEssentialsCommandBase
 	@Override
 	public boolean canConsoleUseCommand()
 	{
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public String getCommandPerm()
 	{
-		// TODO Auto-generated method stub
-		return "ForgeEssentials.BasicCommands.deselect";
+		return "ForgeEssentials.CoreCommands.select.deselect";
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		return null;
 	}
 }

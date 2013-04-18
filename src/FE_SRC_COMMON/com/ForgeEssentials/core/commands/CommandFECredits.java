@@ -1,5 +1,7 @@
 package com.ForgeEssentials.core.commands;
 
+import java.util.List;
+
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 
@@ -25,6 +27,9 @@ public class CommandFECredits extends ForgeEssentialsCommandBase
 		OutputHandler.chatConfirmation(sender, "luacs1998: " + Localization.get(Localization.CREDITS_LUACS1998));
 		OutputHandler.chatConfirmation(sender, "Dries007: " + Localization.get(Localization.CREDITS_DRIES007));
 		OutputHandler.chatConfirmation(sender, "Malkierian: " + Localization.get(Localization.CREDITS_MALKIERIAN));
+
+		sender.sendChatToPlayer("More info:");
+		sender.sendChatToPlayer("https://github.com/ForgeEssentials/ForgeEssentialsMain/wiki/Team-Information");
 	}
 
 	@Override
@@ -37,16 +42,13 @@ public class CommandFECredits extends ForgeEssentialsCommandBase
 		sender.sendChatToPlayer("luacs1998: " + Localization.get(Localization.CREDITS_LUACS1998));
 		sender.sendChatToPlayer("Dries007: " + Localization.get(Localization.CREDITS_DRIES007));
 		sender.sendChatToPlayer("Malkierian: " + Localization.get(Localization.CREDITS_MALKIERIAN));
+		
+		sender.sendChatToPlayer("More info:");
+		sender.sendChatToPlayer("https://github.com/ForgeEssentials/ForgeEssentialsMain/wiki/Team-Information");
 	}
 
 	@Override
 	public boolean canConsoleUseCommand()
-	{
-		return true;
-	}
-
-	@Override
-	public boolean canPlayerUseCommand(EntityPlayer player)
 	{
 		return true;
 	}
@@ -57,4 +59,34 @@ public class CommandFECredits extends ForgeEssentialsCommandBase
 		return null;
 	}
 
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		return null;
+	}
+	
+	
+	@Override
+	public String getSyntaxConsole()
+	{
+		return "";
+	}
+
+	@Override
+	public String getSyntaxPlayer(EntityPlayer player)
+	{
+		return "";
+	}
+
+	@Override
+	public String getInfoConsole()
+	{
+		return "Get all of the FE credits.";
+	}
+
+	@Override
+	public String getInfoPlayer(EntityPlayer player)
+	{
+		return "Get all of the FE credits.";
+	}
 }

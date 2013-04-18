@@ -1,26 +1,24 @@
 package com.ForgeEssentials.commands;
 
-import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
-import com.ForgeEssentials.core.misc.ItemList;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
+import com.ForgeEssentials.core.misc.FriendlyItemList;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
-public class CommandGive extends ForgeEssentialsCommandBase
+public class CommandGive extends FEcmdModuleCommands
 {
-
 	@Override
 	public String getCommandName()
 	{
@@ -30,131 +28,82 @@ public class CommandGive extends ForgeEssentialsCommandBase
 	@Override
 	public void processCommandPlayer(EntityPlayer sender, String[] args)
 	{
+		if (args.length < 2 || args.length > 3)
+		{
+			OutputHandler.chatError(sender, Localization.get(Localization.ERROR_BADSYNTAX) + getSyntaxConsole());
+		}
+
 		int id = 1;
 		int amount = 64;
 		int dam = 0;
-		EntityPlayer receiver = sender;
 
-		if (args.length == 4)
-		{
-			int[] idAndMeta = FunctionHelper.parseIdAndMetaFromString(args[1], false);
-			id = idAndMeta[0];
-			try
-			{
-				dam = Integer.parseInt(args[3]);
-			}
-			catch (NumberFormatException e)
-			{
-				OutputHandler.chatError(sender, "Damage value is not a number: " + args[3]);
-			}
-		}
-		if (args.length >= 3)
+		// Amount is specified
+		if (args.length == 3)
 		{
 			amount = parseIntBounded(sender, args[2], 0, 64);
 		}
 
-		if (args.length > 1)
+		// Parse the item
+		int[] idAndMeta = FunctionHelper.parseIdAndMetaFromString(args[1], false);
+		id = idAndMeta[0];
+		dam = idAndMeta[1];
+		if (dam == -1)
 		{
-			int[] idAndMeta = FunctionHelper.parseIdAndMetaFromString(args[1], false);
-			id = idAndMeta[0];
-			if (idAndMeta[1] == -1)
-			{
-				dam = 0;
-			}
-			else
-			{
-				dam = idAndMeta[1];
-			}
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
-			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer player : players)
-				{
-					ItemStack stack = new ItemStack(id, amount, dam);
-
-					String name = Item.itemsList[id].func_77653_i(stack);
-					String uname = receiver.getCommandSenderName().equalsIgnoreCase(sender.getCommandSenderName()) ? "you" : receiver.username;
-					sender.sendChatToPlayer("Giving " + uname + " " + amount + " " + name);
-					receiver.inventory.addItemStackToInventory(stack);
-				}
-			}
-			else
-			{
-				OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[0]));
-			}
+			dam = 0;
+		}
+		EntityPlayer player = FunctionHelper.getPlayerForName(sender, args[0]);
+		if (player != null)
+		{
+			ItemStack stack = new ItemStack(id, amount, dam);
+			player.inventory.addItemStackToInventory(stack.copy());
+			String name = Item.itemsList[id].func_77653_i(stack);
+			OutputHandler.chatConfirmation(sender, Localization.format("command.give.given", args[0], amount, name));
 		}
 		else
 		{
-			sender.sendChatToPlayer(Localization.get(Localization.ERROR_BADSYNTAX) + getSyntaxConsole());
+			OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[0]));
 		}
 	}
 
 	@Override
 	public void processCommandConsole(ICommandSender sender, String[] args)
 	{
+		if (args.length < 2 || args.length > 3)
+		{
+			OutputHandler.chatError(sender, Localization.get(Localization.ERROR_BADSYNTAX) + getSyntaxConsole());
+		}
+
 		int id = 1;
 		int amount = 64;
 		int dam = 0;
 
-		if (args.length == 4)
-		{
-			int[] idAndMeta = FunctionHelper.parseIdAndMetaFromString(args[1], false);
-			id = idAndMeta[0];
-			try
-			{
-				dam = Integer.parseInt(args[4]);
-			}
-			catch (NumberFormatException e)
-			{
-				sender.sendChatToPlayer("Damage value is not a number: " + args[4]);
-			}
-		}
+		// Amount is specified
 		if (args.length == 3)
 		{
-			int[] idAndMeta = FunctionHelper.parseIdAndMetaFromString(args[1], false);
-			id = idAndMeta[0];
-			if (idAndMeta[1] == -1)
-			{
-				dam = 0;
-			}
-			else
-			{
-				dam = idAndMeta[1];
-			}
-		}
-		if (args.length > 1)
-		{
 			amount = parseIntBounded(sender, args[2], 0, 64);
+		}
 
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
-			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer receiver : players)
-				{
-					ItemStack stack = new ItemStack(id, amount, dam);
+		// Parse the item
+		int[] idAndMeta = FunctionHelper.parseIdAndMetaFromString(args[1], false);
+		id = idAndMeta[0];
+		dam = idAndMeta[1];
 
-					String name = Item.itemsList[id].func_77653_i(stack);
-					String uname = receiver.getCommandSenderName().equalsIgnoreCase(sender.getCommandSenderName()) ? "you" : receiver.username;
-					sender.sendChatToPlayer("Giving " + uname + " " + amount + " " + name);
-					receiver.inventory.addItemStackToInventory(stack);
-				}
-			}
-			else
-			{
-				OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[0]));
-			}
+		if (dam == -1)
+		{
+			dam = 0;
+		}
+
+		EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+		if (player != null)
+		{
+			ItemStack stack = new ItemStack(id, amount, dam);
+			player.inventory.addItemStackToInventory(stack.copy());
+			String name = Item.itemsList[id].func_77653_i(stack);
+			OutputHandler.chatConfirmation(sender, Localization.format("command.give.given", args[0], amount, name));
 		}
 		else
 		{
-			sender.sendChatToPlayer(Localization.get(Localization.ERROR_BADSYNTAX) + getSyntaxConsole());
+			OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NOPLAYER, args[0]));
 		}
 	}
 
@@ -171,13 +120,19 @@ public class CommandGive extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
-			return getListOfStringsFromIterableMatchingLastWord(args, ItemList.instance().getItemList());
+			return getListOfStringsFromIterableMatchingLastWord(args, FriendlyItemList.instance().getItemList());
 		else if (args.length == 3)
 			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 }

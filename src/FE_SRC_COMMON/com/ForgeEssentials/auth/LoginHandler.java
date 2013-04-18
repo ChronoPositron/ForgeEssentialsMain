@@ -1,76 +1,44 @@
 package com.ForgeEssentials.auth;
 
-import java.util.ArrayList;
-
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraftforge.event.EventPriority;
-import net.minecraftforge.event.ForgeSubscribe;
 
+import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
-import com.ForgeEssentials.util.events.PlayerMoveEvent;
 
 import cpw.mods.fml.common.IPlayerTracker;
 
 public class LoginHandler implements IPlayerTracker
 {
-	ArrayList<String>	unLogged;
-	ArrayList<String>	unRegisted;
-
 	public LoginHandler()
 	{
-		unLogged = new ArrayList<String>();
-		unRegisted = new ArrayList<String>();
-		OutputHandler.info("FEauth initialized. Enabled: " + ModuleAuth.enabled);
-	}
-
-	@ForgeSubscribe(priority = EventPriority.HIGHEST)
-	public void onPlayerMove(PlayerMoveEvent event)
-	{
-		if (!ModuleAuth.enabled)
-			return;
-
-		if (unLogged.contains(event.entityPlayer.username))
-		{
-			event.setCanceled(true);
-			OutputHandler.chatError(event.entityPlayer, "Please use '/login <pwd>' to login");
-		}
-
-		if (unRegisted.contains(event.entityPlayer.username))
-		{
-			event.setCanceled(true);
-			OutputHandler.chatError(event.entityPlayer, "Please use '/register <pwd>' to register");
-		}
-	}
-
-	public void login(EntityPlayer player)
-	{
-		player.sendChatToPlayer("Successfully logged in.");
-		unLogged.remove(player.username);
-		unRegisted.remove(player.username);
+		OutputHandler.info("FEauth initialized. Enabled: " + ModuleAuth.isEnabled());
 	}
 
 	@Override
 	public void onPlayerLogout(EntityPlayer player)
 	{
-		unLogged.remove(player.username);
-		unRegisted.remove(player.username);
+		ModuleAuth.unLogged.remove(player.username);
+		ModuleAuth.unRegistered.remove(player.username);
+		PlayerPassData.discardData(player.username);
 	}
 
 	@Override
 	public void onPlayerLogin(EntityPlayer player)
 	{
-		if (pwdSaver.isRegisted(player.username))
+		PlayerPassData data = PlayerPassData.getData(player.username);
+
+		if (data == null)
 		{
-			if (ModuleAuth.enabled)
-			{
-				player.sendChatToPlayer("Please use '/login <pwd>' to login");
-				unLogged.add(player.username);
-			}
+			OutputHandler.chatError(player, Localization.format("message.auth.needregister"));
+			ModuleAuth.unRegistered.add(player.username);
 		}
 		else
 		{
-			player.sendChatToPlayer("You must '/register <pwd>'!");
-			unRegisted.add(player.username);
+			if (ModuleAuth.isEnabled())
+			{
+				OutputHandler.chatError(player, Localization.format("message.auth.needlogin"));
+			}
+			ModuleAuth.unLogged.add(player.username);
 		}
 	}
 

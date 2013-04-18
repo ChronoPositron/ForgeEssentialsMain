@@ -22,8 +22,7 @@ public class CommandFEPermUser
 {
 	public static void processCommandPlayer(EntityPlayer sender, String[] args)
 	{
-		if (args.length == 0) // display syntax & possible options for this
-								// level
+		if (args.length == 0) // display syntax & possible options for this level
 		{
 			OutputHandler.chatConfirmation(sender, "Possible usage:");
 			OutputHandler.chatConfirmation(sender, "/p user <player> : Display user statistics");
@@ -34,7 +33,7 @@ public class CommandFEPermUser
 		}
 
 		String playerName = args[0];
-		EntityPlayerMP player = FunctionHelper.getPlayerFromPartialName(args[0]);
+		EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
 		if (playerName.equalsIgnoreCase("_ME_"))
 		{
 			player = (EntityPlayerMP) sender;
@@ -50,8 +49,7 @@ public class CommandFEPermUser
 			playerName = player.username;
 		}
 
-		if (args.length == 1) // display user-specific settings & there values
-								// for this player
+		if (args.length == 1) // display user-specific settings & there values for this player
 		{
 			ArrayList<Group> groups = PermissionsAPI.getApplicableGroups(playerName, false, ZoneManager.getGLOBAL().getZoneName());
 			OutputHandler.chatConfirmation(sender, Localization.format("command.permissions.user.info.groups", playerName));
@@ -66,7 +64,7 @@ public class CommandFEPermUser
 			if (args.length == 2) // display user super perms
 			{
 				Zone zone = ZoneManager.getSUPER();
-				ArrayList list = PermissionsAPI.getPlayerPermissions(playerName, zone.getZoneName());
+				ArrayList<String> list = PermissionsAPI.getPlayerPermissions(playerName, zone.getZoneName());
 				boolean error = false;
 				for (Object lineObj : list)
 				{
@@ -90,11 +88,13 @@ public class CommandFEPermUser
 			else if (args.length >= 3) // changing super perms
 			{
 				Zone zone = ZoneManager.getSUPER();
+				String perm = null;
+				String value = null;
 
 				if (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("allow"))
 				{
-					PermissionsAPI.setPlayerPermission(playerName, args[3], true, zone.getZoneName());
-					OutputHandler.chatConfirmation(sender, playerName + " has been allowed " + args[3]);
+					PermissionsAPI.setPlayerPermissionProp(playerName, perm, value, zone.getZoneName());
+					OutputHandler.chatConfirmation(sender, playerName + " has been allowed " + perm + " prop with value of " + value);
 					return;
 				}
 				// remove super perm setting
@@ -112,8 +112,22 @@ public class CommandFEPermUser
 					return;
 				}
 				else if (args[2].equalsIgnoreCase("get"))
-					// Get current state.
+				{
+					String result = PermissionsAPI.getPermissionForPlayer(player.username, zone.getZoneName(), args[2]);
+					if (result == null)
+					{
+						OutputHandler.chatError(sender, "Error processing statement");
+					}
+					else if (result.equals("Zone or target invalid"))
+					{
+						OutputHandler.chatError(sender, "Zone or group does not exist!");
+					}
+					else
+					{
+						OutputHandler.chatConfirmation(sender, args[2] + " is " + result + " for " + player.username);
+					}
 					return;
+				}
 			}
 		}
 		else if (args[1].equalsIgnoreCase("group")) // group management
@@ -124,6 +138,7 @@ public class CommandFEPermUser
 				OutputHandler.chatConfirmation(sender, "/p user <player> group remove : Removes player from specified group.");
 				OutputHandler.chatConfirmation(sender, "/p user <player> group set : Removes player from all groups and adds them to specified group.");
 			}
+
 			String zoneName = ZoneManager.getGLOBAL().getZoneName();
 			if (args.length == 5) // zone is set
 			{
@@ -137,59 +152,62 @@ public class CommandFEPermUser
 					return;
 				}
 			}
-
-			if (args[2].equalsIgnoreCase("add")) // add player to group
+			
+			if (args.length >= 3)
 			{
-				if (args.length > 3)
+				if (args[2].equalsIgnoreCase("add")) // add player to group
 				{
-					String result = PermissionsAPI.addPlayerToGroup(args[3], playerName, zoneName);
-					if (result != null)
+					if (args.length > 3)
 					{
-						OutputHandler.chatError(sender, result);
+						String result = PermissionsAPI.addPlayerToGroup(args[3], playerName, zoneName);
+						if (result != null)
+						{
+							OutputHandler.chatError(sender, result);
+						}
+						else
+						{
+							OutputHandler.chatConfirmation(sender, playerName + " added to group " + args[3]+" in zone "+zoneName);
+						}
 					}
 					else
 					{
-						OutputHandler.chatConfirmation(sender, playerName + " added to group " + args[3]);
+						OutputHandler.chatError(sender, Localization.get(Localization.ERROR_BADSYNTAX));
 					}
+					return;
 				}
-				else
+				else if (args[2].equalsIgnoreCase("remove")) // remove player from
+																// group
 				{
-					OutputHandler.chatError(sender, Localization.get(Localization.ERROR_BADSYNTAX));
+					if (args.length > 3)
+					{
+						String result = PermissionsAPI.clearPlayerGroup(args[3], playerName, zoneName);
+						if (result != null)
+						{
+							OutputHandler.chatError(sender, result);
+						}
+						else
+						{
+							OutputHandler.chatConfirmation(sender, playerName + " removed from group " + args[3]);
+						}
+					}
+					return;
 				}
-				return;
-			}
-			else if (args[2].equalsIgnoreCase("remove")) // remove player from
-															// group
-			{
-				if (args.length > 3)
+				else if (args[2].equalsIgnoreCase("set")) // set player's group
 				{
-					String result = PermissionsAPI.clearPlayerGroup(args[3], playerName, zoneName);
-					if (result != null)
+					if (args.length > 3)
 					{
-						OutputHandler.chatError(sender, result);
+						String result = PermissionsAPI.setPlayerGroup(args[3], playerName, zoneName);
+						if (result != null)
+						{
+							OutputHandler.chatError(sender, result);
+						}
+						else
+						{
+							OutputHandler.chatConfirmation(sender, playerName + "'s group set to " + args[3]);
+						}
 					}
-					else
-					{
-						OutputHandler.chatConfirmation(sender, playerName + " removed from group " + args[3]);
-					}
+					return;
 				}
-				return;
-			}
-			else if (args[2].equalsIgnoreCase("set")) // set player's group
-			{
-				if (args.length > 3)
-				{
-					String result = PermissionsAPI.setPlayerGroup(args[3], playerName, zoneName);
-					if (result != null)
-					{
-						OutputHandler.chatError(sender, result);
-					}
-					else
-					{
-						OutputHandler.chatConfirmation(sender, playerName + "'s group set to " + args[3]);
-					}
-				}
-				return;
 			}
 		}
 		else if (args.length >= 2) // player management
@@ -339,31 +357,31 @@ public class CommandFEPermUser
 				Collections.sort(list);
 				ArrayList<String> messageAllowed = new ArrayList<String>();
 				ArrayList<String> messageDenied = new ArrayList<String>();
-				for (String perm : list)
+				for (String permission : list)
 				{
-					if (perm.contains("has no individual permissions."))
+					if (permission.contains("has no individual permissions."))
 					{
-						OutputHandler.chatConfirmation(sender, perm);
+						OutputHandler.chatConfirmation(sender, permission);
 						return;
 					}
-					if (perm.contains("ALLOW"))
+					if (permission.contains("true"))
 					{
-						messageAllowed.add(" " + FEChatFormatCodes.DARKGREEN + perm.substring(0, perm.indexOf(":")));
+						messageAllowed.add(" " + FEChatFormatCodes.DARKGREEN + permission.substring(0, permission.indexOf(":")));
 					}
 					else
 					{
-						messageDenied.add(" " + FEChatFormatCodes.DARKRED + perm.substring(0, perm.indexOf(":")));
+						messageDenied.add(" " + FEChatFormatCodes.DARKRED + permission.substring(0, permission.indexOf(":")));
 					}
 				}
 				OutputHandler.chatConfirmation(sender, playerName + ": Current permissions in zone " + zoneName + ":");
 				OutputHandler.chatConfirmation(sender, " (" + FEChatFormatCodes.DARKGREEN + "ALLOWED" + FEChatFormatCodes.DARKRED + " DENIED" + FEChatFormatCodes.GREEN + ")");
-				for (String perm : messageAllowed)
+				for (String permission : messageAllowed)
 				{
-					OutputHandler.chatConfirmation(sender, perm);
+					OutputHandler.chatConfirmation(sender, permission);
 				}
-				for (String perm : messageDenied)
+				for (String permission : messageDenied)
 				{
-					OutputHandler.chatConfirmation(sender, perm);
+					OutputHandler.chatConfirmation(sender, permission);
 				}
 				return;
 			}
@@ -386,7 +404,7 @@ public class CommandFEPermUser
 		}
 
 		String playerName = args[0];
-		EntityPlayerMP player = FunctionHelper.getPlayerFromPartialName(args[0]);
+		EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
 		if (player == null)
 		{
 			sender.sendChatToPlayer("ERROR: " + Localization.format(Localization.ERROR_NOPLAYER, args[0]));
@@ -413,7 +431,7 @@ public class CommandFEPermUser
 			if (args.length == 2) // display user super perms
 			{
 				Zone zone = ZoneManager.getSUPER();
-				ArrayList list = PermissionsAPI.getPlayerPermissions(playerName, zone.getZoneName());
+				ArrayList<String> list = PermissionsAPI.getPlayerPermissions(playerName, zone.getZoneName());
 				boolean error = false;
 				for (Object lineObj : list)
 				{
@@ -444,26 +462,35 @@ public class CommandFEPermUser
 					sender.sendChatToPlayer(playerName + " has been allowed " + args[3]);
 					return;
 				}
-				else if (args[2].equalsIgnoreCase("clear") || args[2].equalsIgnoreCase("remove")) // remove
-																									// super
-																									// perm
-																									// settings
+				else if (args[2].equalsIgnoreCase("clear") || args[2].equalsIgnoreCase("remove")) // remove super perm settings
 				{
 					PermissionsAPI.clearPlayerPermission(playerName, args[3], zone.getZoneName());
 					sender.sendChatToPlayer(playerName + "'s access to " + args[2] + " cleared");
 					return;
 				}
-				else if (args[2].equalsIgnoreCase("false") || args[2].equalsIgnoreCase("deny")) // deny
-																								// super
-																								// perm
+				else if (args[2].equalsIgnoreCase("false") || args[2].equalsIgnoreCase("deny")) // deny super perm
 				{
 					PermissionsAPI.setPlayerPermission(playerName, args[3], false, zone.getZoneName());
 					sender.sendChatToPlayer(playerName + " has been denied " + args[3]);
 					return;
 				}
 				else if (args[2].equalsIgnoreCase("get"))
-					// Get current state.
+				{
+					String result = PermissionsAPI.getPermissionForPlayer(player.username, zone.getZoneName(), args[2]);
+					if (result == null)
+					{
+						OutputHandler.chatError(sender, "Error processing statement");
+					}
+					else if (result.equals("Zone or target invalid"))
+					{
+						OutputHandler.chatError(sender, "Zone or group does not exist!");
+					}
+					else
+					{
+						OutputHandler.chatConfirmation(sender, args[2] + " is " + result + " for " + player.username);
+					}
 					return;
+				}
 
 			}
 		}

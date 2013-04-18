@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.PrintWriter;
 
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.ServerConfigurationManager;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.MinecraftForge;
@@ -12,14 +13,8 @@ import net.minecraftforge.event.world.WorldEvent;
 
 import com.ForgeEssentials.api.ForgeEssentialsRegistrar.PermRegister;
 import com.ForgeEssentials.api.modules.FEModule;
-import com.ForgeEssentials.api.modules.FEModule.Config;
-import com.ForgeEssentials.api.modules.FEModule.Init;
-import com.ForgeEssentials.api.modules.FEModule.ModuleDir;
-import com.ForgeEssentials.api.modules.FEModule.ServerInit;
-import com.ForgeEssentials.api.modules.FEModule.ServerStop;
 import com.ForgeEssentials.api.modules.event.FEModuleInitEvent;
 import com.ForgeEssentials.api.modules.event.FEModuleServerInitEvent;
-import com.ForgeEssentials.api.modules.event.FEModuleServerStopEvent;
 import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
 import com.ForgeEssentials.api.permissions.RegGroup;
@@ -29,40 +24,40 @@ import com.ForgeEssentials.util.FEChatFormatCodes;
 import com.ForgeEssentials.util.OutputHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.registry.TickRegistry;
+import cpw.mods.fml.relauncher.Side;
 
 @FEModule(name = "Backups", parentMod = ForgeEssentials.class, configClass = BackupConfig.class)
 public class ModuleBackup
 {
-	@Config
+	@FEModule.Config
 	public static BackupConfig	config;
 
-	@ModuleDir
+	@FEModule.ModuleDir
 	public static File			moduleDir;
 
 	public static File			baseFolder;
-	public static AutoBackup	autoBackup;
-	public static AutoWorldSave	autoWorldSave;
 
-	@Init
+	@FEModule.Init
 	public void load(FEModuleInitEvent e)
 	{
 		MinecraftForge.EVENT_BUS.register(this);
+		TickRegistry.registerTickHandler(new WorldSaver(), Side.SERVER);
 	}
 
-	@ServerInit
+	@FEModule.ServerInit
 	public void serverStarting(FEModuleServerInitEvent e)
 	{
 		e.registerServerCommand(new CommandBackup());
-		autoBackup = new AutoBackup();
-		autoWorldSave = new AutoWorldSave();
+		if (BackupConfig.autoInterval != 0)
+		{
+			new AutoBackup();
+		}
+		if (BackupConfig.worldSaveInterval != 0)
+		{
+			new AutoWorldSave();
+		}
 		makeReadme();
-	}
-
-	@ServerStop
-	public void serverStopping(FEModuleServerStopEvent e)
-	{
-		autoBackup.interrupt();
-		autoWorldSave.interrupt();
 	}
 
 	@PermRegister
@@ -77,22 +72,19 @@ public class ModuleBackup
 	{
 		if (FMLCommonHandler.instance().getEffectiveSide().isServer())
 		{
-			if (BackupConfig.backupIfUnloaded)
+			if (BackupConfig.backupOnWorldUnload)
 			{
-				new Backup((WorldServer) e.world, false);
+				new Backup((WorldServer) e.world, false).run();
 			}
 		}
 	}
 
 	@ForgeSubscribe
-	public void worldUnload(WorldEvent.Load e)
+	public void worldLoad(WorldEvent.Load e)
 	{
 		if (FMLCommonHandler.instance().getEffectiveSide().isServer())
 		{
-			if (BackupConfig.worldSaveing)
-			{
-				((WorldServer) e.world).canNotSave = !BackupConfig.worldSaveing;
-			}
+			((WorldServer) e.world).canNotSave = !BackupConfig.worldSaving;
 		}
 	}
 
@@ -103,10 +95,12 @@ public class ModuleBackup
 			return;
 		try
 		{
-			ServerConfigurationManager server = FMLCommonHandler.instance().getMinecraftServerInstance().getConfigurationManager();
-			for (String username : server.getAllUsernames())
+			MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+			ServerConfigurationManager manager = server.getConfigurationManager();
+			server.sendChatToPlayer(msg);
+			for (String username : manager.getAllUsernames())
 			{
-				EntityPlayerMP player = server.getPlayerForUsername(username);
+				EntityPlayerMP player = manager.getPlayerForUsername(username);
 				if (PermissionsAPI.checkPermAllowed(new PermQueryPlayer(player, "ForgeEssentials.backup.msg")))
 				{
 					player.sendChatToPlayer(FEChatFormatCodes.AQUA + msg);
@@ -114,7 +108,8 @@ public class ModuleBackup
 			}
 		}
 		catch (Exception e)
-		{}
+		{
+		}
 	}
 
 	private void makeReadme()

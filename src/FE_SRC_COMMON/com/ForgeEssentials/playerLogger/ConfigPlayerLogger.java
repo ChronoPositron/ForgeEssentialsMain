@@ -1,15 +1,18 @@
 package com.ForgeEssentials.playerLogger;
 
 import java.io.File;
+import java.util.Arrays;
 
 import net.minecraft.command.ICommandSender;
 import net.minecraftforge.common.Configuration;
 
 import com.ForgeEssentials.api.modules.ModuleConfigBase;
+import com.ForgeEssentials.playerLogger.logger.EventLogger;
 
 public class ConfigPlayerLogger extends ModuleConfigBase
 {
-	public Configuration	config;
+	public static final String[]	exemptDefPlayers = {"\"[Forestry]\"", "\"[Buildcraft]\""};
+	public Configuration			config;
 
 	public ConfigPlayerLogger(File file)
 	{
@@ -29,12 +32,18 @@ public class ConfigPlayerLogger extends ModuleConfigBase
 		subcat = cat + ".DB";
 		config.addCustomCategoryComment(subcat, "Database settings. Look here if something broke.");
 
-		ModulePlayerLogger.url = config.get(subcat, "url", "jdbc:mysql://localhost:3306/testdb", "jdbc url").value;
-		ModulePlayerLogger.username = config.get(subcat, "username", "root").value;
-		ModulePlayerLogger.password = config.get(subcat, "password", "root").value;
+		ModulePlayerLogger.url = config.get(subcat, "url", "jdbc:mysql://localhost:3306/testdb", "jdbc url").getString();
+		ModulePlayerLogger.username = config.get(subcat, "username", "root").getString();
+		ModulePlayerLogger.password = config.get(subcat, "password", "root").getString();
 		ModulePlayerLogger.ragequitOn = config.get(subcat, "ragequit", false, "Stop the server when the logging fails").getBoolean(false);
 		ModulePlayerLogger.interval = config.get(subcat, "interval", 300, "Amount of time (in sec.) between database saves.").getInt();
 
+		subcat = cat + ".exempt";
+		config.addCustomCategoryComment(subcat, "Don't log stuff from these players/group.\nCase sensitive.\nMods should not be using fake players. But if they do, you can add them here if you don't logs from them.");
+		
+		EventLogger.exempt_players = Arrays.asList(config.get(subcat, "players", exemptDefPlayers).getStringList());
+		EventLogger.exempt_groups = Arrays.asList(config.get(subcat, "groups", new String[] {}).getStringList());
+		
 		subcat = cat + ".events";
 		config.addCustomCategoryComment(subcat, "Toggle events to log here.");
 
@@ -65,6 +74,8 @@ public class ConfigPlayerLogger extends ModuleConfigBase
 		{
 			EventLogger.BlockChange_BlackList.add(i);
 		}
+		
+		
 
 		config.save();
 	}
@@ -87,12 +98,18 @@ public class ConfigPlayerLogger extends ModuleConfigBase
 		subcat = cat + ".DB";
 		config.addCustomCategoryComment(subcat, "Database settings. Look here if something broke.");
 
-		ModulePlayerLogger.url = config.get(subcat, "url", "jdbc:mysql://localhost:3306/testdb", "jdbc url").value;
-		ModulePlayerLogger.username = config.get(subcat, "username", "root").value;
-		ModulePlayerLogger.password = config.get(subcat, "password", "root").value;
+		ModulePlayerLogger.url = config.get(subcat, "url", "jdbc:mysql://localhost:3306/testdb", "jdbc url").getString();
+		ModulePlayerLogger.username = config.get(subcat, "username", "root").getString();
+		ModulePlayerLogger.password = config.get(subcat, "password", "root").getString();
 		ModulePlayerLogger.ragequitOn = config.get(subcat, "ragequit", false, "Stop the server when the logging fails").getBoolean(false);
 		ModulePlayerLogger.interval = config.get(subcat, "interval", 300, "Amount of time (in sec.) between database saves.").getInt();
 
+		subcat = cat + ".exempt";
+		config.addCustomCategoryComment(subcat, "Don't log stuff from these players/group.\nCase sensitive.\nMods should not be using fake players. But if they do, you can add them here if you don't logs from them.");
+		
+		EventLogger.exempt_players = Arrays.asList(config.get(subcat, "players", exemptDefPlayers).getStringList());
+		EventLogger.exempt_groups = Arrays.asList(config.get(subcat, "groups", new String[] {}).getStringList());
+		
 		subcat = cat + ".events";
 		config.addCustomCategoryComment(subcat, "Toggle events to log here.");
 

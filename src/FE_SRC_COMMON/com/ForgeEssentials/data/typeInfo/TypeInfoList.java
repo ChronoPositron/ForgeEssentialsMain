@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import com.ForgeEssentials.api.data.ClassContainer;
+import com.ForgeEssentials.api.data.IReconstructData;
 import com.ForgeEssentials.api.data.TypeData;
 import com.ForgeEssentials.api.data.TypeMultiValInfo;
 import com.ForgeEssentials.util.OutputHandler;
@@ -24,7 +25,7 @@ public class TypeInfoList extends TypeMultiValInfo
 	}
 
 	@Override
-	public void build(HashMap<String, ClassContainer> fields)
+	public void buildEntry(HashMap<String, ClassContainer> fields)
 	{
 		fields.put(POS, new ClassContainer(int.class));
 		fields.put(ELEMENT, new ClassContainer(container.getParameters()[0]));
@@ -35,7 +36,7 @@ public class TypeInfoList extends TypeMultiValInfo
 	{
 		HashSet<TypeData> datas = new HashSet<TypeData>();
 
-		List list = (List) obj;
+		List<?> list = (List<?>) obj;
 
 		TypeData data;
 		for (int i = 0; i < list.size(); i++)
@@ -50,7 +51,7 @@ public class TypeInfoList extends TypeMultiValInfo
 	}
 
 	@Override
-	public Object reconstruct(TypeData[] data)
+	public Object reconstruct(TypeData[] data, IReconstructData rawType)
 	{
 		Object array = Array.newInstance(container.getType(), data.length);
 
@@ -59,10 +60,10 @@ public class TypeInfoList extends TypeMultiValInfo
 			Array.set(array, (Integer) dat.getFieldValue(POS), dat.getFieldValue(ELEMENT));
 		}
 
-		List list = new ArrayList(data.length);
+		List<Object> list = new ArrayList<Object>(data.length);
 		try
 		{
-			list = (List) container.getType().newInstance();
+			list = (List<Object>) container.getType().newInstance();
 		}
 		catch (Exception e)
 		{

@@ -8,10 +8,12 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import com.ForgeEssentials.api.data.ClassContainer;
+import com.ForgeEssentials.api.data.IReconstructData;
 import com.ForgeEssentials.api.data.TypeData;
 import com.ForgeEssentials.api.data.TypeMultiValInfo;
 import com.ForgeEssentials.util.OutputHandler;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class TypeInfoMap extends TypeMultiValInfo
 {
 	public static final String	KEY	= "key";
@@ -23,7 +25,7 @@ public class TypeInfoMap extends TypeMultiValInfo
 	}
 
 	@Override
-	public void build(HashMap<String, ClassContainer> fields)
+	public void buildEntry(HashMap<String, ClassContainer> fields)
 	{
 		fields.put(KEY, new ClassContainer(container.getParameters()[0]));
 		fields.put(VAL, new ClassContainer(container.getParameters()[1]));
@@ -55,7 +57,7 @@ public class TypeInfoMap extends TypeMultiValInfo
 	}
 
 	@Override
-	public Object reconstruct(TypeData[] data)
+	public Object reconstruct(TypeData[] data, IReconstructData rawType)
 	{
 		Map map = new HashMap();
 		try

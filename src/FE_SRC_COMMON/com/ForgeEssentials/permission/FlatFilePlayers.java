@@ -3,6 +3,8 @@ package com.ForgeEssentials.permission;
 import java.io.File;
 import java.util.ArrayList;
 
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.management.ServerConfigurationManager;
 import net.minecraftforge.common.Configuration;
 
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
@@ -26,7 +28,7 @@ public class FlatFilePlayers
 		Configuration config = new Configuration(file);
 
 		PlayerInfo info;
-		for (String cat : config.categories.keySet())
+		for (String cat : config.getCategoryNames())
 		{
 			if (cat.contains("."))
 			{
@@ -34,8 +36,8 @@ public class FlatFilePlayers
 			}
 			else if (cat.equalsIgnoreCase(PermissionsAPI.getEntryPlayer()))
 			{
-				PermissionsAPI.setEPPrefix(config.get(cat, "prefix", " ").value);
-				PermissionsAPI.setEPSuffix(config.get(cat, "suffix", " ").value);
+				PermissionsAPI.setEPPrefix(config.get(cat, "prefix", " ").getString());
+				PermissionsAPI.setEPSuffix(config.get(cat, "suffix", " ").getString());
 				continue;
 			}
 
@@ -43,8 +45,8 @@ public class FlatFilePlayers
 
 			if (info != null)
 			{
-				info.prefix = config.get(cat, "prefix", " ").value;
-				info.suffix = config.get(cat, "suffix", " ").value;
+				info.prefix = config.get(cat, "prefix", " ").getString();
+				info.suffix = config.get(cat, "suffix", " ").getString();
 			}
 
 			players.add(cat);
@@ -62,7 +64,16 @@ public class FlatFilePlayers
 			file.delete();
 		}
 
-		String[] allPlayers = FMLCommonHandler.instance().getSidedDelegate().getServer().getConfigurationManager().getAllUsernames();
+		String[] allPlayers = new String[0];
+		MinecraftServer server = FMLCommonHandler.instance().getSidedDelegate().getServer();
+		if (server != null)
+		{
+			ServerConfigurationManager manager = server.getConfigurationManager();
+			if (manager != null)
+			{
+				allPlayers = manager.getAllUsernames();
+			}
+		}
 
 		Configuration config = new Configuration(file);
 

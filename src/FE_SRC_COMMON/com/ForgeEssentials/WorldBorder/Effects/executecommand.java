@@ -3,6 +3,9 @@ package com.ForgeEssentials.WorldBorder.Effects;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.Configuration;
+
+import com.ForgeEssentials.WorldBorder.WorldBorder;
+
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 
@@ -13,11 +16,11 @@ public class executecommand implements IEffect
 	@Override
 	public void registerConfig(Configuration config, String category)
 	{
-		command = config.get(category, "Command", command, "%p gets replaced with the players username").value;
+		command = config.get(category, "Command", command, "%p gets replaced with the players username").getString();
 	}
 
 	@Override
-	public void execute(EntityPlayerMP player)
+	public void execute(WorldBorder wb, EntityPlayerMP player)
 	{
 		if (FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER)
 		{

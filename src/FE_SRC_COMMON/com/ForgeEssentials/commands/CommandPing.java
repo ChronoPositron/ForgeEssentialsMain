@@ -7,16 +7,17 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.common.Configuration;
 
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.api.permissions.RegGroup;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 
-public class CommandPing extends ForgeEssentialsCommandBase
+public class CommandPing extends FEcmdModuleCommands
 {
 	String	response	= "Pong! %time";
 
 	@Override
 	public void doConfig(Configuration config, String category)
 	{
-		response = config.get(category, "response", "Pong! %time").value;
+		response = config.get(category, "response", "Pong! %time").getString();
 	}
 
 	@Override
@@ -26,7 +27,7 @@ public class CommandPing extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List getCommandAliases()
+	public List<String> getCommandAliases()
 	{
 		return null;
 	}
@@ -53,5 +54,17 @@ public class CommandPing extends ForgeEssentialsCommandBase
 	public String getCommandPerm()
 	{
 		return "ForgeEssentials.BasicCommands." + getCommandName();
+	}
+
+	@Override
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
+	{
+		return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.GUESTS;
 	}
 }

@@ -1,31 +1,32 @@
 package com.ForgeEssentials.WorldBorder;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.WorldServer;
+import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
 
-import com.ForgeEssentials.WorldBorder.ModuleWorldBorder.BorderShape;
+import com.ForgeEssentials.api.permissions.Zone;
+import com.ForgeEssentials.api.permissions.ZoneManager;
 import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
 import com.ForgeEssentials.util.FEChatFormatCodes;
-import com.ForgeEssentials.util.Localization;
+import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.OutputHandler;
+import com.ForgeEssentials.util.AreaSelector.Point;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
 /**
- * Used to check, set and fill the border. You need to activate the module
- * before this command is usable.
+ * Used to check or set the border.
+ * Filler will get a sperate command later
  * @author Dries007
  */
 
 public class CommandWB extends ForgeEssentialsCommandBase
 {
-	public static TickTaskFill	taskGooing	= null;
-
 	@Override
 	public String getCommandName()
 	{
@@ -33,7 +34,7 @@ public class CommandWB extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List getCommandAliases()
+	public List<String> getCommandAliases()
 	{
 		return Arrays.asList(new String[]
 		{ "wb" });
@@ -45,116 +46,7 @@ public class CommandWB extends ForgeEssentialsCommandBase
 		if (FMLCommonHandler.instance().getEffectiveSide().isClient())
 			return;
 
-		boolean set = ModuleWorldBorder.set;
-		// Info
-		if (args.length == 0)
-		{
-			sender.sendChatToPlayer(Localization.get(Localization.WB_STATUS_HEADER));
-			if (set)
-			{
-				sender.sendChatToPlayer(FEChatFormatCodes.GREEN + Localization.get(Localization.WB_STATUS_BORDERSET));
-				sender.sendChatToPlayer("Coordinates :");
-				if (ModuleWorldBorder.shape.equals(BorderShape.square))
-				{
-					sender.sendChatToPlayer("centerX:" + ModuleWorldBorder.X + "  centerZ:" + ModuleWorldBorder.Z);
-					sender.sendChatToPlayer("rad:" + ModuleWorldBorder.rad + " Shape: Square");
-					sender.sendChatToPlayer("minX:" + ModuleWorldBorder.minX + "  maxX:" + ModuleWorldBorder.maxX);
-					sender.sendChatToPlayer("minZ:" + ModuleWorldBorder.minZ + "  maxZ:" + ModuleWorldBorder.maxZ);
-				}
-				if (ModuleWorldBorder.shape.equals(BorderShape.round))
-				{
-					sender.sendChatToPlayer("centerX:" + ModuleWorldBorder.X + "  centerZ:" + ModuleWorldBorder.Z);
-					sender.sendChatToPlayer("rad:" + ModuleWorldBorder.rad + " Shape: Round");
-				}
-			}
-			else
-			{
-				sender.sendChatToPlayer(FEChatFormatCodes.RED + Localization.get(Localization.WB_STATUS_BORDERNOTSET));
-			}
-			return;
-		}
-		// Fill
-		if (args[0].equalsIgnoreCase("fill"))
-		{
-			if (args.length == 1)
-			{
-				sender.sendChatToPlayer(FEChatFormatCodes.RED + Localization.get(Localization.WB_LAGWARING));
-				sender.sendChatToPlayer(FEChatFormatCodes.RED + Localization.get(Localization.WB_FILL_INFO));
-				sender.sendChatToPlayer(Localization.get(Localization.WB_FILL_CONFIRM));
-				return;
-			}
-			if (args[1].equalsIgnoreCase("start"))
-			{
-				MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-				WorldServer world = server.worldServers[sender.dimension];
-
-				if (taskGooing != null)
-				{
-					sender.sendChatToPlayer(Localization.get(Localization.WB_FILL_ONLYONCE));
-				}
-				else
-				{
-					taskGooing = new TickTaskFill(world);
-				}
-				return;
-			}
-			if (args[1].equalsIgnoreCase("continue"))
-			{
-				MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-				WorldServer world = server.worldServerForDimension(sender.dimension);
-
-				if (taskGooing != null)
-				{
-					sender.sendChatToPlayer(Localization.get(Localization.WB_FILL_ONLYONCE));
-				}
-				else
-				{
-					taskGooing = new TickTaskFill(world);
-				}
-				return;
-			}
-			if (args[1].equalsIgnoreCase("cancel"))
-			{
-				taskGooing.stop();
-				return;
-			}
-			if (args[1].equalsIgnoreCase("message"))
-			{
-				if (args[2].equalsIgnoreCase("off") || args[2].equalsIgnoreCase("false"))
-				{
-					TickTaskFill.enablemsg = false;
-				}
-				else
-				{
-					TickTaskFill.enablemsg = true;
-				}
-				return;
-			}
-		}
-		// Set
-		if (args[0].equalsIgnoreCase("set") && args.length >= 3)
-		{
-			BorderShape shape = BorderShape.valueOf(args[1].toLowerCase());
-			int rad = parseIntWithMin(sender, args[2], 0);
-
-			if (args.length == 3)
-			{
-				ModuleWorldBorder.setCenter(rad, (int) sender.posX, (int) sender.posZ, shape, true);
-				sender.sendChatToPlayer(Localization.get(Localization.WB_SET).replaceAll("%r", "" + rad).replaceAll("%x", "" + (int) sender.posX).replaceAll("%z", "" + (int) sender.posZ));
-				return;
-			}
-			if (args.length == 5)
-			{
-				int X = parseInt(sender, args[3]);
-				int Z = parseInt(sender, args[4]);
-
-				ModuleWorldBorder.setCenter(rad, X, Z, shape, true);
-				sender.sendChatToPlayer(Localization.get(Localization.WB_SET).replaceAll("%r", "" + rad).replaceAll("%x", "" + X).replaceAll("%z", "" + Z));
-				return;
-			}
-		}
-		// Command unknown
-		OutputHandler.chatError(sender, Localization.get(Localization.ERROR_BADSYNTAX) + getSyntaxPlayer(sender));
+		execute(sender, args);
 	}
 
 	@Override
@@ -162,128 +54,176 @@ public class CommandWB extends ForgeEssentialsCommandBase
 	{
 		if (FMLCommonHandler.instance().getEffectiveSide().isClient())
 			return;
-		boolean set = ModuleWorldBorder.set;
-		// Info
+
+		execute(sender, args);
+	}
+
+	public void execute(ICommandSender sender, String[] args)
+	{
+		/*
+		 * We need the zone...
+		 */
+		Zone zone;
 		if (args.length == 0)
 		{
-			sender.sendChatToPlayer(Localization.get(Localization.WB_STATUS_HEADER));
-			if (set)
+			OutputHandler.chatError(sender, "You must specify a zone you want to work in. '/wb global' or '/wb <id>'");
+			if (sender instanceof EntityPlayer)
 			{
-				sender.sendChatToPlayer(FEChatFormatCodes.GREEN + Localization.get(Localization.WB_STATUS_BORDERSET));
-				sender.sendChatToPlayer("Coordinates :");
-				if (ModuleWorldBorder.shape.equals(BorderShape.square))
-				{
-					sender.sendChatToPlayer("minX:" + ModuleWorldBorder.minX + "  maxX:" + ModuleWorldBorder.maxX);
-					sender.sendChatToPlayer("minZ:" + ModuleWorldBorder.minZ + "  maxZ:" + ModuleWorldBorder.maxZ);
-				}
-				if (ModuleWorldBorder.shape.equals(BorderShape.round))
-				{
-					sender.sendChatToPlayer("centerX:" + ModuleWorldBorder.X + "  centerZ:" + ModuleWorldBorder.Z);
-					sender.sendChatToPlayer("rad:" + ModuleWorldBorder.rad);
-				}
-			}
-			else
-			{
-				sender.sendChatToPlayer(FEChatFormatCodes.RED + Localization.get(Localization.WB_STATUS_BORDERNOTSET));
+				OutputHandler.chatError(sender, "As a player, '/wb world' works too");
 			}
 			return;
 		}
-		// Fill
-		if (args[0].equalsIgnoreCase("fill"))
+		else if (args[0].equalsIgnoreCase("global"))
 		{
-			if (args.length == 1)
+			zone = ZoneManager.getGLOBAL();
+		}
+		else if (FunctionHelper.isNumeric(args[0]))
+		{
+			World world = DimensionManager.getWorld(parseInt(sender, args[0]));
+			if (world == null)
 			{
-				sender.sendChatToPlayer(FEChatFormatCodes.RED + Localization.get(Localization.WB_LAGWARING));
-				sender.sendChatToPlayer(FEChatFormatCodes.RED + Localization.get(Localization.WB_FILL_INFO));
-				sender.sendChatToPlayer(Localization.get(Localization.WB_FILL_CONFIRM));
+				OutputHandler.chatError(sender, args[0] + " is not an ID of a loaded world.");
 				return;
 			}
-			if (args[1].equalsIgnoreCase("start"))
-			{
-				if (args.length != 3)
-				{
-					sender.sendChatToPlayer(Localization.get(Localization.WB_FILL_CONSOLENEEDSDIM));
-					return;
-				}
-				MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-				int dim = parseInt(sender, args[2]);
-				WorldServer world = server.worldServerForDimension(dim);
+			zone = ZoneManager.getWorldZone(world);
+		}
+		else if (args[0].equalsIgnoreCase("world") && sender instanceof EntityPlayer)
+		{
+			zone = ZoneManager.getWorldZone(((EntityPlayer) sender).worldObj);
+		}
+		else
+		{
+			OutputHandler.chatError(sender, "You must specify a zone you want to work in. '/wb global' or '/wb <id>'");
+			return;
+		}
 
-				if (world != null)
-				{
-					if (taskGooing != null)
-					{
-						sender.sendChatToPlayer(Localization.get(Localization.WB_FILL_ONLYONCE));
-					}
-					else
-					{
-						taskGooing = new TickTaskFill(world);
-					}
-				}
-				else
-				{
-					sender.sendChatToPlayer(Localization.get(Localization.WB_FILL_UNLOADEDWOLD));
-				}
+		/*
+		 * Now we have the zone...
+		 */
+		WorldBorder border = ModuleWorldBorder.borderMap.get(zone.getZoneName());
 
-				return;
-			}
-			if (args[1].equalsIgnoreCase("continue"))
+		/*
+		 * Want info?
+		 */
+		if (args.length == 1 || args[1].equalsIgnoreCase("info"))
+		{
+			// Header
+			String header = "--- WorldBorder for " + zone.getZoneName() + " ---";
+			sender.sendChatToPlayer(header);
+			// Actual info
+			sender.sendChatToPlayer("Enabled: " + (border.enabled ? FEChatFormatCodes.GREEN : FEChatFormatCodes.RED) + border.enabled);
+			sender.sendChatToPlayer("Center: " + border.center.toString());
+			sender.sendChatToPlayer("Radius: " + border.rad);
+			sender.sendChatToPlayer("Shape: " + border.getShape());
+			// Footer
+			StringBuilder footer = new StringBuilder();
+			for (int i = 0; i < header.length(); i++)
 			{
-				if (args.length != 3)
-				{
-					sender.sendChatToPlayer(Localization.get(Localization.WB_FILL_CONSOLENEEDSDIM));
-					return;
-				}
-				MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-				int dim = parseInt(sender, args[2]);
-				WorldServer world = server.worldServers[dim];
-
-				if (taskGooing != null)
-				{
-					sender.sendChatToPlayer(Localization.get(Localization.WB_FILL_ONLYONCE));
-				}
-				else
-				{
-					taskGooing = new TickTaskFill(world);
-				}
-				return;
+				footer.append("-");
 			}
-			if (args[1].equalsIgnoreCase("cancel"))
+			sender.sendChatToPlayer(footer.toString());
+		}
+		/*
+		 * No. Want to en|disable?
+		 */
+		else if (args[1].equalsIgnoreCase("enable"))
+		{
+			if (border.shapeByte != 0 && border.rad != 0)
 			{
-				taskGooing.stop();
-				return;
+				border.enabled = true;
+				OutputHandler.chatConfirmation(sender, "Border has been enabled.");
 			}
-			if (args[1].equalsIgnoreCase("message"))
+			else
 			{
-				if (args[2].equalsIgnoreCase("off") || args[2].equalsIgnoreCase("false"))
-				{
-					TickTaskFill.enablemsg = false;
-				}
-				else
-				{
-					TickTaskFill.enablemsg = true;
-				}
-				return;
+				OutputHandler.chatError(sender, "You have to set a center, radius and shape first!");
 			}
 		}
-		// Set
-		if (args[0].equalsIgnoreCase("set") && args.length >= 5)
+		else if (args[1].equalsIgnoreCase("disable"))
 		{
-			BorderShape shape = BorderShape.valueOf(args[1].toLowerCase());
-			int rad = parseIntWithMin(sender, args[2], 0);
-
-			if (args.length == 5)
+			if (border.shapeByte != 0 && border.rad != 0)
 			{
-				int X = parseInt(sender, args[3]);
-				int Z = parseInt(sender, args[4]);
-
-				ModuleWorldBorder.setCenter(rad, X, Z, shape, true);
-				sender.sendChatToPlayer(Localization.get(Localization.WB_SET).replaceAll("%r", "" + rad).replaceAll("%x", "" + X).replaceAll("%z", "" + Z));
-				return;
+				border.enabled = false;
+				OutputHandler.chatConfirmation(sender, "Border has been disabled.");
+			}
+			else
+			{
+				OutputHandler.chatError(sender, "You have to set a center, radius and shape first!");
 			}
 		}
-		// Command unknown
-		sender.sendChatToPlayer(Localization.get(Localization.ERROR_BADSYNTAX) + getSyntaxConsole());
+		/*
+		 * No. Center maybe?
+		 */
+		else if (args[1].equalsIgnoreCase("center"))
+		{
+			if (args.length == 2)
+			{
+				OutputHandler.chatError(sender, "You have to specify coordinates (x z)" + (sender instanceof EntityPlayer ? " or 'here'." : "."));
+			}
+			else if (sender instanceof EntityPlayer && args[2].equalsIgnoreCase("here"))
+			{
+				border.center = new Point((EntityPlayer) sender);
+				OutputHandler.chatConfirmation(sender, "Center set to " + border.center);
+			}
+			else
+			{
+				if (args.length == 4)
+				{
+					int x = parseInt(sender, args[2]);
+					int z = parseInt(sender, args[3]);
+					border.center = new Point(x, 64, z);
+					OutputHandler.chatConfirmation(sender, "Center set to " + border.center);
+				}
+				else
+				{
+					OutputHandler.chatError(sender, "Expected '/wb " + args[0] + " center <x> <z>'");
+				}
+			}
+		}
+		/*
+		 * No. How about radius?
+		 */
+		else if (args[1].equalsIgnoreCase("rad") || args[1].equalsIgnoreCase("radius"))
+		{
+			if (args.length == 2)
+			{
+				OutputHandler.chatError(sender, "You have to specify a radius...");
+			}
+			else
+			{
+				border.rad = parseIntWithMin(sender, args[2], 0);
+				OutputHandler.chatConfirmation(sender, "You have set the radius to " + border.rad);
+			}
+		}
+		/*
+		 * Last option... Shape?
+		 */
+		else if (args[1].equalsIgnoreCase("shape"))
+		{
+			if (args.length == 2)
+			{
+				OutputHandler.chatError(sender, "You have to set the boder to 'round' or 'square'.");
+			}
+			else if (args[2].equalsIgnoreCase("square"))
+			{
+				border.shapeByte = 1;
+				OutputHandler.chatConfirmation(sender, "You have set the border to " + border.getShape());
+			}
+			else if (args[2].equalsIgnoreCase("round"))
+			{
+				border.shapeByte = 2;
+				OutputHandler.chatConfirmation(sender, "You have set the border to " + border.getShape());
+			}
+		}
+		/*
+		 * dafuq?
+		 */
+		else
+		{
+			OutputHandler.chatError(sender, "dafuq? I have no clue what you are trying to do. Use TAB for cmd filling!");
+			OutputHandler.chatError(sender, "/wb <zone> [info|enable|disable|center|radius|shape]");
+		}
+
+		ModuleWorldBorder.saveAll();
 	}
 
 	@Override
@@ -295,20 +235,33 @@ public class CommandWB extends ForgeEssentialsCommandBase
 	@Override
 	public String getCommandPerm()
 	{
-		return "ForgeEssentials.WorldBorder.command";
+		return "ForgeEssentials.WorldBorder.admin";
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
+		// Zone selection
 		if (args.length == 1)
-			return getListOfStringsMatchingLastWord(args, "set", "fill");
-		if (args.length == 2 && args[0].equalsIgnoreCase("set"))
+		{
+			ArrayList<String> list = new ArrayList<String>();
+			list.add("global");
+			if (sender instanceof EntityPlayer)
+			{
+				list.add("world");
+			}
+			for (int i : DimensionManager.getIDs())
+			{
+				list.add("" + i);
+			}
+			return getListOfStringsFromIterableMatchingLastWord(args, list);
+		}
+		// Options
+		if (args.length == 2)
+			return getListOfStringsMatchingLastWord(args, "info", "enable", "disable", "center", "radius", "shape");
+		// If shape...
+		if (args.length == 3 && args[2].equalsIgnoreCase("shape"))
 			return getListOfStringsMatchingLastWord(args, "square", "round");
-		if (args.length == 2 && args[0].equalsIgnoreCase("fill"))
-			return getListOfStringsMatchingLastWord(args, "start", "continue", "cancel", "message");
-		if (args.length == 3 && args[0].equalsIgnoreCase("fill") && args[1].equalsIgnoreCase("message"))
-			return getListOfStringsMatchingLastWord(args, "off", "on");
 		return null;
 	}
 

@@ -2,17 +2,14 @@ package com.ForgeEssentials.permission;
 
 import java.util.ArrayList;
 
-import net.minecraftforge.event.EventPriority;
-
-import com.ForgeEssentials.api.permissions.Group;
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
 import com.ForgeEssentials.api.permissions.Zone;
 import com.ForgeEssentials.api.permissions.ZoneManager;
+import com.ForgeEssentials.api.permissions.query.PermQuery;
 import com.ForgeEssentials.api.permissions.query.PermQuery.PermResult;
 import com.ForgeEssentials.api.permissions.query.PermQueryBlanketArea;
 import com.ForgeEssentials.api.permissions.query.PermQueryBlanketSpot;
 import com.ForgeEssentials.api.permissions.query.PermQueryBlanketZone;
-import com.ForgeEssentials.api.permissions.query.PermSubscribe;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.AreaSelector.AreaBase;
 import com.ForgeEssentials.util.AreaSelector.WorldArea;
@@ -27,23 +24,36 @@ import com.ForgeEssentials.util.AreaSelector.WorldArea;
  */
 public final class PermissionsBlanketHandler
 {
-	@PermSubscribe(priority = EventPriority.NORMAL, handleResult = { PermResult.UNKNOWN })
-	public void handleQuery(PermQueryBlanketZone event)
+	public static void parseQuery(PermQuery query)
+	{
+		if (query instanceof PermQueryBlanketZone)
+		{
+			handleZone((PermQueryBlanketZone) query);
+		}
+		else if (query instanceof PermQueryBlanketArea)
+		{
+			handleArea((PermQueryBlanketArea) query);
+		}
+		else if (query instanceof PermQueryBlanketSpot)
+		{
+			handleSpot((PermQueryBlanketSpot) query);
+		}
+	}
+
+	protected static void handleZone(PermQueryBlanketZone event)
 	{
 		PermResult result = getResultFromZone(event.toCheck, event.checker, event.checkForward);
 		event.setResult(result);
 	}
-	
-	@PermSubscribe(priority = EventPriority.NORMAL, handleResult = { PermResult.UNKNOWN })
-	public void handleQuery(PermQueryBlanketSpot event)
+
+	protected static void handleSpot(PermQueryBlanketSpot event)
 	{
 		Zone zone = ZoneManager.getWhichZoneIn(event.spot);
 		PermResult result = getResultFromZone(zone, event.checker, event.checkForward);
 		event.setResult(result);
 	}
 
-	@PermSubscribe(priority = EventPriority.NORMAL, handleResult = { PermResult.UNKNOWN })
-	public void handleQuery(PermQueryBlanketArea event)
+	protected static void handleArea(PermQueryBlanketArea event)
 	{
 		if (event.allOrNothing)
 		{
@@ -75,12 +85,10 @@ public final class PermissionsBlanketHandler
 	 * @param player Player to check/
 	 * @return the result for the perm.
 	 */
-	private PermResult getResultFromZone(Zone zone, PermissionChecker checker, boolean checkForward)
+	private static PermResult getResultFromZone(Zone zone, PermissionChecker checker, boolean checkForward)
 	{
-		ArrayList<Group> groups;
 		PermResult result = PermResult.UNKNOWN;
 		Zone tempZone = zone;
-		Group group;
 		while (result.equals(PermResult.UNKNOWN))
 		{
 			result = SqlHelper.getPermissionResult(PermissionsAPI.getDEFAULT().name, true, checker, tempZone.getZoneName(), checkForward);
@@ -103,7 +111,7 @@ public final class PermissionsBlanketHandler
 		return result;
 	}
 
-	private ArrayList<AreaBase> getApplicableAreas(WorldArea doneTo, PermQueryBlanketArea event)
+	private static ArrayList<AreaBase> getApplicableAreas(WorldArea doneTo, PermQueryBlanketArea event)
 	{
 		ArrayList<AreaBase> applicable = new ArrayList<AreaBase>();
 

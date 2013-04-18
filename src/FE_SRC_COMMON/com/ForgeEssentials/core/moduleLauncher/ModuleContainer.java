@@ -43,6 +43,7 @@ import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 
+@SuppressWarnings("rawtypes")
 public class ModuleContainer implements Comparable
 {
 	protected static HashSet<Class>				modClasses	= new HashSet<Class>();
@@ -61,10 +62,10 @@ public class ModuleContainer implements Comparable
 	public final String							className;
 	public final String							name;
 	public final boolean						isCore;
-	private boolean								isLoadable	= true;
-	protected boolean							isValid		= true;
+	public boolean								isLoadable	= true;
 	protected boolean							doesOverride;
 
+	@SuppressWarnings("unchecked")
 	public ModuleContainer(ASMData data)
 	{
 		// get the class....
@@ -75,11 +76,11 @@ public class ModuleContainer implements Comparable
 		{
 			c = Class.forName(className);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.info("Error trying to load " + data.getClassName() + " as a FEModule!");
 			e.printStackTrace();
-			isValid = false;
+
 			isCore = false;
 			name = "INVALID-MODULE";
 			return;
@@ -248,7 +249,7 @@ public class ModuleContainer implements Comparable
 			c = Class.forName(className);
 			module = c.newInstance();
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.warning(name + " could not be instantiated. FE will not load this module.");
 			e.printStackTrace();
@@ -290,7 +291,7 @@ public class ModuleContainer implements Comparable
 				f.set(module, file);
 			}
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.info("Error populating fields of " + name);
 			Throwables.propagate(e);
@@ -316,7 +317,7 @@ public class ModuleContainer implements Comparable
 			}
 
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.info("Error Instantiating or populating config for " + name);
 			Throwables.propagate(e);
@@ -325,6 +326,7 @@ public class ModuleContainer implements Comparable
 
 	// make the methods to run the events now...
 
+	@SuppressWarnings("unchecked")
 	public void runPreInit(FMLPreInitializationEvent fmlEvent, CallableMap map)
 	{
 		if (!isLoadable || preinit == null)
@@ -334,17 +336,17 @@ public class ModuleContainer implements Comparable
 		try
 		{
 			Class c = Class.forName(className);
-			Method m = c.getDeclaredMethod(preinit, new Class[]
-			{ FEModulePreInitEvent.class });
+			Method m = c.getDeclaredMethod(preinit, new Class[] { FEModulePreInitEvent.class });
 			m.invoke(module, event);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
-			OutputHandler.info("Error while invoking preInit event for " + name);
+			OutputHandler.severe("Error while invoking preInit event for " + name);
 			Throwables.propagate(e);
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void runInit(FMLInitializationEvent fmlEvent)
 	{
 		if (!isLoadable || init == null)
@@ -354,17 +356,17 @@ public class ModuleContainer implements Comparable
 		try
 		{
 			Class c = Class.forName(className);
-			Method m = c.getDeclaredMethod(init, new Class[]
-			{ FEModuleInitEvent.class });
+			Method m = c.getDeclaredMethod(init, new Class[] { FEModuleInitEvent.class });
 			m.invoke(module, event);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.info("Error while invoking Init event for " + name);
 			Throwables.propagate(e);
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void runPostInit(FMLPostInitializationEvent fmlEvent)
 	{
 		if (!isLoadable || postinit == null)
@@ -378,13 +380,14 @@ public class ModuleContainer implements Comparable
 			{ FEModulePostInitEvent.class });
 			m.invoke(module, event);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.info("Error while invoking PostInit event for " + name);
 			Throwables.propagate(e);
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void runServerInit(FMLServerStartingEvent fmlEvent)
 	{
 		if (!isLoadable || serverinit == null)
@@ -398,13 +401,14 @@ public class ModuleContainer implements Comparable
 			{ FEModuleServerInitEvent.class });
 			m.invoke(module, event);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.info("Error while invoking ServerInit event for " + name);
 			Throwables.propagate(e);
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void runServerPostInit(FMLServerStartedEvent fmlEvent)
 	{
 		if (!isLoadable || serverpostinit == null)
@@ -418,13 +422,14 @@ public class ModuleContainer implements Comparable
 			{ FEModuleServerPostInitEvent.class });
 			m.invoke(module, event);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.info("Error while invoking ServerPostInit event for " + name);
 			Throwables.propagate(e);
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void runServerStop(FMLServerStoppingEvent fmlEvent)
 	{
 		if (!isLoadable || serverstop == null)
@@ -438,13 +443,14 @@ public class ModuleContainer implements Comparable
 			{ FEModuleServerStopEvent.class });
 			m.invoke(module, event);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.info("Error while invoking ServerStop event for " + name);
 			Throwables.propagate(e);
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void runReload(ICommandSender user)
 	{
 		if (!isLoadable || reload == null)
@@ -457,7 +463,7 @@ public class ModuleContainer implements Comparable
 			{ ICommandSender.class });
 			m.invoke(module, user);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			OutputHandler.info("Error while invoking Reload method for " + name);
 			Throwables.propagate(e);

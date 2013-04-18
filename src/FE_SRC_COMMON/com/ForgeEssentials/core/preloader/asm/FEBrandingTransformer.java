@@ -23,9 +23,9 @@ public class FEBrandingTransformer implements IClassTransformer
 
 	private static final String				SERVERBRAND	= "forge,fml, ForgeEssentials";
 
-	public static HashMap makemcsHM()
+	public static HashMap<String, String> makemcsHM()
 	{
-		HashMap mcsHM = new HashMap<String, String>();
+		HashMap<String, String> mcsHM = new HashMap<String, String>();
 
 		mcsHM.put("className", "net.minecraft.server.MinecraftServer");
 		mcsHM.put("javaClassName", "net/minecraft/server/MinecraftServer");
@@ -34,9 +34,9 @@ public class FEBrandingTransformer implements IClassTransformer
 		return mcsHM;
 	}
 
-	public static HashMap makecbrHM()
+	public static HashMap<String, String> makecbrHM()
 	{
-		HashMap cbrHM = new HashMap<String, String>();
+		HashMap<String, String> cbrHM = new HashMap<String, String>();
 
 		cbrHM.put("className", "net.minecraft.client.ClientBrandRetriever");
 		cbrHM.put("javaClassName", "net/minecraft/client/ClientBrandRetriever");
@@ -46,7 +46,7 @@ public class FEBrandingTransformer implements IClassTransformer
 	}
 
 	@Override
-	public byte[] transform(String name, byte[] bytes)
+	public byte[] transform(String name, String transformedName, byte[] bytes)
 	{
 		if (name.equals(mcsHM.get("className")))
 			// MinecraftServer, NOT Obfuscated
@@ -57,6 +57,7 @@ public class FEBrandingTransformer implements IClassTransformer
 				// ClientBrandRetriever, NOT obfuscated
 				return transformBranding(bytes, cbrHM);
 		}
+		
 		return bytes;
 	}
 
@@ -79,6 +80,14 @@ public class FEBrandingTransformer implements IClassTransformer
 				while (m.instructions.get(offset).getOpcode() != LDC)
 				{
 					offset++;
+					
+					if (offset == m.instructions.size())
+					{
+						System.out.println("[FE coremod] Patching MinecraftServer or ClientBrandRetriever FAILED");
+						ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+						classNode.accept(writer);
+						return writer.toByteArray();
+					}
 				}
 
 				InsnList toInject = new InsnList();

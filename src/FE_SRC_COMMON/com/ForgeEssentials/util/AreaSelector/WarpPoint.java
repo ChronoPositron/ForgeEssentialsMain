@@ -37,7 +37,7 @@ public class WarpPoint extends WorldPoint
 
 	public WarpPoint(int dimension, double x, double y, double z, float playerPitch, float playerYaw)
 	{
-		super(dimension, (int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
+		super(dimension, (int) Math.round(x), (int) Math.round(y), (int) Math.round(z));
 		xd = x;
 		yd = y;
 		zd = z;
@@ -74,7 +74,7 @@ public class WarpPoint extends WorldPoint
 	/**
 	 * This is calculated by the whichever has higher coords.
 	 * @return Posotive number if this Point is larger. 0 if they are equal.
-	 *         Negative if the provided point is larger.
+	 * Negative if the provided point is larger.
 	 */
 	public int compareTo(WarpPoint point)
 	{

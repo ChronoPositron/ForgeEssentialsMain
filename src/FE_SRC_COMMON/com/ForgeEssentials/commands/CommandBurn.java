@@ -1,25 +1,24 @@
 package com.ForgeEssentials.commands;
 
-import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.PlayerSelector;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
 import com.ForgeEssentials.api.permissions.PermissionsAPI;
+import com.ForgeEssentials.api.permissions.RegGroup;
 import com.ForgeEssentials.api.permissions.query.PermQueryPlayer;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
+import com.ForgeEssentials.commands.util.FEcmdModuleCommands;
 import com.ForgeEssentials.util.FunctionHelper;
 import com.ForgeEssentials.util.Localization;
 import com.ForgeEssentials.util.OutputHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
-public class CommandBurn extends ForgeEssentialsCommandBase
+public class CommandBurn extends FEcmdModuleCommands
 {
-
 	@Override
 	public String getCommandName()
 	{
@@ -34,22 +33,15 @@ public class CommandBurn extends ForgeEssentialsCommandBase
 			if (args[0].toLowerCase().equals("me"))
 			{
 				sender.setFire(15);
-				OutputHandler.chatError(sender, Localization.get(Localization.BURN_SELF));
+				OutputHandler.chatError(sender, Localization.get("command.burn.self"));
 			}
 			else if (PermissionsAPI.checkPermAllowed(new PermQueryPlayer(sender, getCommandPerm() + ".others")))
 			{
-				List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-				if (PlayerSelector.hasArguments(args[0]))
+				EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+				if (player != null)
 				{
-					players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-				}
-				if (players.size() != 0)
-				{
-					OutputHandler.chatConfirmation(sender, Localization.get(Localization.BURN_PLAYER));
-					for (EntityPlayer player : players)
-					{
-						player.setFire(15);
-					}
+					OutputHandler.chatConfirmation(sender, Localization.get("command.burn.player"));
+					player.setFire(15);
 				}
 				else
 				{
@@ -64,7 +56,7 @@ public class CommandBurn extends ForgeEssentialsCommandBase
 				try
 				{
 					sender.setFire(Integer.parseInt(args[1]));
-					OutputHandler.chatError(sender, Localization.get(Localization.BURN_SELF));
+					OutputHandler.chatError(sender, Localization.get("command.burn.self"));
 				}
 				catch (NumberFormatException e)
 				{
@@ -73,26 +65,11 @@ public class CommandBurn extends ForgeEssentialsCommandBase
 			}
 			else if (PermissionsAPI.checkPermAllowed(new PermQueryPlayer(sender, getCommandPerm() + ".others")))
 			{
-				List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-				if (PlayerSelector.hasArguments(args[0]))
+				EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+				if (player != null)
 				{
-					players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-				}
-				if (players.size() != 0)
-				{
-					for (EntityPlayer player : players)
-					{
-						try
-						{
-							player.setFire(Integer.parseInt(args[1]));
-							OutputHandler.chatConfirmation(sender, Localization.get(Localization.BURN_PLAYER));
-						}
-						catch (NumberFormatException e)
-						{
-							OutputHandler.chatError(sender, Localization.format(Localization.ERROR_NAN, args[1]));
-							break;
-						}
-					}
+					player.setFire(parseIntWithMin(sender, args[1], 0));
+					OutputHandler.chatConfirmation(sender, Localization.get("command.burn.player"));
 				}
 				else
 				{
@@ -109,30 +86,27 @@ public class CommandBurn extends ForgeEssentialsCommandBase
 	@Override
 	public void processCommandConsole(ICommandSender sender, String[] args)
 	{
-		if (args.length == 1)
+		int time = 15;
+		if (args.length == 2)
 		{
-			List<EntityPlayerMP> players = Arrays.asList(FunctionHelper.getPlayerFromPartialName(args[0]));
-			if (PlayerSelector.hasArguments(args[0]))
-			{
-				players = Arrays.asList(PlayerSelector.matchPlayers(sender, args[0]));
-			}
-			if (players.size() != 0)
-			{
-				for (EntityPlayer player : players)
-				{
-					player.setFire(Integer.parseInt(args[1]));
-				}
-				sender.sendChatToPlayer(Localization.get(Localization.BURN_PLAYER));
-			}
-			else
-			{
-				sender.sendChatToPlayer(Localization.format(Localization.ERROR_NOPLAYER, args[0]));
-			}
+			time = parseIntWithMin(sender, args[1], 0);
+		}
+		EntityPlayerMP player = FunctionHelper.getPlayerForName(sender, args[0]);
+		if (player != null)
+		{
+			player.setFire(time);
+			sender.sendChatToPlayer(Localization.get("command.burn.player"));
 		}
 		else
 		{
-			sender.sendChatToPlayer(Localization.get(Localization.ERROR_BADSYNTAX) + getSyntaxConsole());
+			sender.sendChatToPlayer(Localization.format(Localization.ERROR_NOPLAYER, args[0]));
 		}
+	}
+
+	@Override
+	public void registerExtraPermissions(IPermRegisterEvent event)
+	{
+		event.registerPermissionLevel(getCommandPerm() + ".others", RegGroup.OWNERS);
 	}
 
 	@Override
@@ -148,11 +122,17 @@ public class CommandBurn extends ForgeEssentialsCommandBase
 	}
 
 	@Override
-	public List addTabCompletionOptions(ICommandSender sender, String[] args)
+	public List<?> addTabCompletionOptions(ICommandSender sender, String[] args)
 	{
 		if (args.length == 1)
 			return getListOfStringsMatchingLastWord(args, FMLCommonHandler.instance().getMinecraftServerInstance().getAllUsernames());
 		else
 			return null;
+	}
+
+	@Override
+	public RegGroup getReggroup()
+	{
+		return RegGroup.OWNERS;
 	}
 }

@@ -1,6 +1,7 @@
 package com.ForgeEssentials.core;
 
 import java.io.File;
+import java.util.logging.Level;
 
 import net.minecraftforge.common.Configuration;
 import net.minecraftforge.common.Property;
@@ -28,24 +29,26 @@ public class CoreConfig
 		Property prop = config.get("Core", "versionCheck", true);
 		prop.comment = "Check for newer versions of ForgeEssentials on load?";
 		ForgeEssentials.verCheck = prop.getBoolean(true);
+		
+		prop = config.get("Core", "debug", false);
+		prop.comment = "Activates developer debug mode. Spams your FML logs.";
+		OutputHandler.debugmode = prop.getBoolean(false);
 
 		prop = config.get("Core", "mcstats", true);
 		prop.comment = "If you don't want to send feedback to MCstats, set to false. Optionally, use the opt-out setting located in PluginMetrics.cfg in your minecraft folder.";
 		ForgeEssentials.mcstats = prop.getBoolean(true);
+		
+		prop = config.get("Core", "logLevel", ""+Level.OFF);
+		prop.comment = "ForgeEssentials LogLevel. Valid values: OFF, FINE, FINER, FINEST, WARNING, SEVERE, ALL, OFF";
+		OutputHandler.felog.setLevel(getLevel(prop.getString()));
 
 		prop = config.get("Core", "modlistLocation", "modlist.txt");
 		prop.comment = "Specify the file where the modlist will be written to. This path is relative to the ForgeEssentials folder.";
-		ForgeEssentials.modlistLocation = prop.value;
+		ForgeEssentials.modlistLocation = prop.getString();
 
-		prop = config.get("general", "removeDuplicateCommands", true);
+		prop = config.get("Core", "removeDuplicateCommands", true);
 		prop.comment = "Remove commands from the list if they already exist outside of FE.";
 		DuplicateCommandRemoval.removeDuplicateCommands = prop.getBoolean(true);
-
-		// sanity check.
-
-		prop = config.get("Core", "sanitychecks", true);
-		prop.comment = "For advanced users only: If you wish to run FE on a bukkit server or on a server with Fihgu's mod (not recommended, not supported), set this to false.";
-		ForgeEssentials.sanitycheck = prop.getBoolean(true);
 
 		prop = config.get("Core.Misc", "tpWarmup", 5);
 		prop.comment = "The amount of time you need to stand still to TP.";
@@ -71,9 +74,31 @@ public class CoreConfig
 
 		prop = config.get("Core.VIP", "kickMessage", "Sorry, this spot is for VIPs");
 		prop.comment = "Message you get when you log in and no VIP space is available";
-		PlayerTracker.kickMessage = prop.value;
+		PlayerTracker.kickMessage = prop.getString();
 
 		config.save();
+	}
+	
+	private Level getLevel(String val)
+	{
+		if (val.equalsIgnoreCase("INFO"))
+			return Level.INFO;
+		else if (val.equalsIgnoreCase("WARNING"))
+			return Level.WARNING;
+		else if (val.equalsIgnoreCase("SEVERE"))
+			return Level.SEVERE;
+		else if (val.equalsIgnoreCase("FINE"))
+			return Level.FINE;
+		else if (val.equalsIgnoreCase("FINER"))
+			return Level.FINER;
+		else if (val.equalsIgnoreCase("FINEST"))
+			return Level.FINEST;
+		else if (val.equalsIgnoreCase("ALL"))
+			return Level.ALL;
+		else if (val.equalsIgnoreCase("OFF"))
+			return Level.OFF;
+		else
+			return Level.INFO;
 	}
 
 	/**
@@ -83,6 +108,8 @@ public class CoreConfig
 	{
 		config.save();
 
-		config.get("general", "removeDuplicateCommands", true, "Remove commands from the list if they already exist outside of FE.").value = "" + DuplicateCommandRemoval.removeDuplicateCommands;
+		Property prop = config.get("general", "removeDuplicateCommands", true);
+		prop.comment = ("Remove commands from the list if they already exist outside of FE.");
+		DuplicateCommandRemoval.removeDuplicateCommands = prop.getBoolean(true);
 	}
 }

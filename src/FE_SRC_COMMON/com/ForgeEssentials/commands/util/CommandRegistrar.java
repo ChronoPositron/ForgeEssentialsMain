@@ -4,12 +4,14 @@ import java.util.ArrayList;
 
 import net.minecraftforge.common.Configuration;
 
+import com.ForgeEssentials.api.permissions.IPermRegisterEvent;
 import com.ForgeEssentials.commands.CommandAFK;
 import com.ForgeEssentials.commands.CommandBack;
 import com.ForgeEssentials.commands.CommandBed;
 import com.ForgeEssentials.commands.CommandBurn;
 import com.ForgeEssentials.commands.CommandButcher;
 import com.ForgeEssentials.commands.CommandCapabilities;
+import com.ForgeEssentials.commands.CommandChunkLoaderList;
 import com.ForgeEssentials.commands.CommandClearInventory;
 import com.ForgeEssentials.commands.CommandColorize;
 import com.ForgeEssentials.commands.CommandCraft;
@@ -22,6 +24,7 @@ import com.ForgeEssentials.commands.CommandGive;
 import com.ForgeEssentials.commands.CommandHeal;
 import com.ForgeEssentials.commands.CommandHome;
 import com.ForgeEssentials.commands.CommandI;
+import com.ForgeEssentials.commands.CommandInventorySee;
 import com.ForgeEssentials.commands.CommandJump;
 import com.ForgeEssentials.commands.CommandKill;
 import com.ForgeEssentials.commands.CommandKit;
@@ -34,10 +37,9 @@ import com.ForgeEssentials.commands.CommandPotion;
 import com.ForgeEssentials.commands.CommandRemove;
 import com.ForgeEssentials.commands.CommandRepair;
 import com.ForgeEssentials.commands.CommandRules;
-import com.ForgeEssentials.commands.CommandSeeInventory;
 import com.ForgeEssentials.commands.CommandServerDo;
 import com.ForgeEssentials.commands.CommandServerSettings;
-import com.ForgeEssentials.commands.CommandSetspawn;
+import com.ForgeEssentials.commands.CommandSetSpawn;
 import com.ForgeEssentials.commands.CommandSmite;
 import com.ForgeEssentials.commands.CommandSpawn;
 import com.ForgeEssentials.commands.CommandSpawnMob;
@@ -50,13 +52,12 @@ import com.ForgeEssentials.commands.CommandTphere;
 import com.ForgeEssentials.commands.CommandTppos;
 import com.ForgeEssentials.commands.CommandVirtualchest;
 import com.ForgeEssentials.commands.CommandWarp;
-import com.ForgeEssentials.core.commands.ForgeEssentialsCommandBase;
 
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
 public class CommandRegistrar
 {
-	public static ArrayList<ForgeEssentialsCommandBase>	cmdList	= new ArrayList();
+	public static ArrayList<FEcmdModuleCommands>	cmdList	= new ArrayList<FEcmdModuleCommands>();
 
 	static
 	{
@@ -75,12 +76,12 @@ public class CommandRegistrar
 		cmdList.add(new CommandEnderchest());
 		cmdList.add(new CommandVirtualchest());
 		cmdList.add(new CommandCapabilities());
-		cmdList.add(new CommandSetspawn());
+		cmdList.add(new CommandSetSpawn());
 		cmdList.add(new CommandJump());
 		cmdList.add(new CommandCraft());
 		cmdList.add(new CommandPing());
 		cmdList.add(new CommandServerDo());
-		cmdList.add(new CommandSeeInventory());
+		cmdList.add(new CommandInventorySee());
 		cmdList.add(new CommandSmite());
 		cmdList.add(new CommandBurn());
 		cmdList.add(new CommandPotion());
@@ -106,6 +107,7 @@ public class CommandRegistrar
 		cmdList.add(new CommandTPA());
 		cmdList.add(new CommandTop());
 		cmdList.add(new CommandTPAhere());
+		cmdList.add(new CommandChunkLoaderList());
 	}
 
 	public static void commandConfigs(Configuration config)
@@ -119,7 +121,7 @@ public class CommandRegistrar
 			config.addCustomCategoryComment("Player", "Toggle server wide player usage here.");
 			config.addCustomCategoryComment("Console", "Toggle console usage here.");
 
-			for (ForgeEssentialsCommandBase fecmd : cmdList)
+			for (FEcmdModuleCommands fecmd : cmdList)
 			{
 				if (fecmd.usefullCmdBlock())
 				{
@@ -136,7 +138,7 @@ public class CommandRegistrar
 
 				String category = "commands." + fecmd.getCommandName();
 				config.addCustomCategoryComment(category, fecmd.getCommandPerm());
-				for (String alias : config.get(category, "aliases", fecmd.getDefaultAliases()).valueList)
+				for (String alias : config.get(category, "aliases", fecmd.getDefaultAliases()).getStringList())
 				{
 					fecmd.aliasList.add(alias);
 				}
@@ -153,9 +155,21 @@ public class CommandRegistrar
 
 	public static void load(FMLServerStartingEvent e)
 	{
-		for (ForgeEssentialsCommandBase cmd : cmdList)
+		for (FEcmdModuleCommands cmd : cmdList)
 		{
 			e.registerServerCommand(cmd);
+		}
+	}
+
+	public static void registerPermissions(IPermRegisterEvent event)
+	{
+		for (FEcmdModuleCommands cmd : cmdList)
+		{
+			if (cmd.getCommandPerm() != null && cmd.getReggroup() != null)
+			{
+				event.registerPermissionLevel(cmd.getCommandPerm(), cmd.getReggroup());
+				cmd.registerExtraPermissions(event);
+			}
 		}
 	}
 }

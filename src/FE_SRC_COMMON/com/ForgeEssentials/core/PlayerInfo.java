@@ -27,7 +27,7 @@ public class PlayerInfo
 {
 	private static HashMap<String, PlayerInfo>	playerInfoMap	= new HashMap<String, PlayerInfo>();
 
-	@Deprecated
+	// @Deprecated Why? it doesn't have to be removed?
 	public static PlayerInfo getPlayerInfo(EntityPlayer player)
 	{
 		return getPlayerInfo(player.username);
@@ -57,7 +57,8 @@ public class PlayerInfo
 	public static void discardInfo(String username)
 	{
 		PlayerInfo info = playerInfoMap.remove(username);
-		info.save();
+		if (info != null)
+			info.save();
 	}
 
 	@Reconstructor()
@@ -80,6 +81,7 @@ public class PlayerInfo
 
 		info.timePlayed = (Integer) tag.getFieldValue("timePlayed");
 
+		info.firstJoin = (Long) tag.getFieldValue("firstJoin");
 		return info;
 	}
 
@@ -121,7 +123,12 @@ public class PlayerInfo
 	public int						spawnType;
 
 	@SaveableField()
-	public int						timePlayed;
+	private int						timePlayed;
+
+	private long					loginTime;
+
+	@SaveableField()
+	private long					firstJoin;
 
 	// undo and redo stuff
 	private Stack<BackupArea>		undos;
@@ -142,6 +149,11 @@ public class PlayerInfo
 
 		prefix = "";
 		suffix = "";
+
+		firstJoin = System.currentTimeMillis();
+		loginTime = System.currentTimeMillis();
+
+		timePlayed = 0;
 	}
 
 	/**
@@ -149,7 +161,27 @@ public class PlayerInfo
 	 */
 	public void save()
 	{
+		recalcTimePlayed();
 		DataStorageManager.getReccomendedDriver().saveObject(new ClassContainer(PlayerInfo.class), this);
+	}
+
+	public long getFirstJoin()
+	{
+		return firstJoin;
+	}
+
+	public int getTimePlayed()
+	{
+		recalcTimePlayed();
+		return timePlayed;
+	}
+
+	public void recalcTimePlayed()
+	{
+		long current = System.currentTimeMillis() - loginTime;
+		int min = (int) (current / 60000);
+		timePlayed += min;
+		loginTime = System.currentTimeMillis();
 	}
 
 	// ----------------------------------------------
